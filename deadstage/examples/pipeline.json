@@ -1,0 +1,10 @@
+{
+  "docs": [
+    {"id": "d0", "text": "The quarterly earnings report showed steady revenue growth."},
+    {"id": "d1", "text": "Operating margins held stable despite inflationary pressure."},
+    {"id": "d2", "text": "The audit committee flagged a minor reconciliation gap."}
+  ],
+  "queries": ["What did the audit committee find?"],
+  "k": 2,
+  "seed": 1234
+}

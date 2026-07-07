@@ -1,0 +1,78 @@
+# RAG Reliability & Verification Toolkit
+
+[![test](https://github.com/trentmilam/rag-reliability/actions/workflows/test.yml/badge.svg)](https://github.com/trentmilam/rag-reliability/actions/workflows/test.yml)
+
+Twelve small, **offline, deterministic** tools that turn *silent* RAG failures into **loud, named,
+verifiable** signals — one per stage of the retrieval lifecycle. Each ships a **red/green self-test**
+that reproduces a real failure and gates on it. Measured, not asserted.
+
+> **Honest framing (RAG is a crowded field).** Each tool claims novelty only on its *narrow wedge* and
+> cites prior art in its own README; several win on the specific **combination + packaging + a rigorous
+> demo**, not on a new algorithm.
+
+## The twelve (one per lifecycle stage)
+
+| tool | stage | what it catches | eval |
+|---|---|---|---|
+| [**ReindexGate**](reindexgate/README.md) | eval / regression | label-free index-vs-index quality delta with a bootstrap CI; fails CI on a bad reindex | ✅ red/green |
+| [**Deadstage**](deadstage/README.md) | liveness | names the *single* dead pipeline stage (assert, don't mask) | ✅ |
+| [**VecStamp**](vecstamp/README.md) | embedding integrity | re-embedding reproduction certificate; types quant-drift vs wrong-weights vs lost-norm vs dim-mismatch | ✅ |
+| [**Plumbline**](plumbline/README.md) | provenance | deterministic chunk→source coverage under normalization; reports drifted/lost/ambiguous citations on reindex | ✅ |
+| [**ChunkLedger**](chunkledger/README.md) | ingestion | per-structural-element conservation law; catches dropped tables / code | ✅ |
+| [**GraphRx**](graphrx/README.md) | graph retrieval | GraphRAG structural linter scored by answer-poisoning risk; fixes validated by a poisoning-delta | ✅ |
+| [**Headroom**](headroom/README.md) | agentic cost | hardware-aware budget governor (VRAM / thermal / latency) → allow / deny / defer before a hop | ✅ |
+| [**Leakprobe**](leakprobe/README.md) | PII / security | retrievability-ranked PII audit + minimal, recall-preserving redaction | ✅ |
+| [**Legigate**](legigate/README.md) | OCR / ingestion | reference-free reading-order + table-collapse legibility gate | ✅ |
+| [**RAGForensics**](ragforensics/README.md) | generation diagnostic | label-free retriever-vs-generator attribution + auto-calibrated leak threshold | ✅ |
+| [**SyncGate**](syncgate/README.md) | incremental sync / reference integrity | flags only genuinely-changed sources (content-hash diff, measured 6x reduction vs. reprocess-everything) + a three-way reference fallback (LIVE / STALE_CACHED / DANGLING) that names the exact broken edge, never fabricates a target | ✅ red/green |
+| [**CovGate**](covgate/README.md) | coverage / gap-hunting | corpus-wide external-registry corroboration audit (orphan/thin/adequate + run-over-run drift); catches the self-referential "well covered" trap a naive keyword-frequency count misses | ✅ red/green |
+
+## Requirements
+
+```
+pip install -r requirements.txt
+```
+
+Python 3.10–3.12 (tested with numpy==2.5.0 on Python 3.12.13). No other
+dependencies — see "Design principles" below.
+
+## Run every tool's self-test in one command
+
+```
+python run_all_evals.py
+```
+
+Discovers every tool's `eval.py`, runs it, and prints one PASS/FAIL for the
+whole repo — exit `0` iff all twelve pass. CI (badge above) runs this same
+command on every push/PR across Python 3.10/3.11/3.12, so the claim stays
+continuously verified rather than a point-in-time assertion.
+
+To run one tool in isolation:
+
+```
+python <tool>/eval.py
+```
+
+Each exits 0 on pass, reproduces the injected failure (RED) and passes the clean case (GREEN), and is
+**deterministic** (fixed seed) and **offline** — no network, no GPU required (GPU/model pieces are
+simulated deterministically, clearly labeled).
+
+## Design principles (every repo)
+
+1. **Each tool ships a worked demonstration of a real failure mode** — a reproduction of the failure turned into a RED gate + a GREEN pass for the clean case. These are targeted demonstrations of the tool's core mechanism, not a claim of exhaustive test coverage (see each tool's "Honest scope" section for what is and isn't exercised).
+2. **Honesty guardrail** — novelty claimed on the narrow wedge only, prior art cited per tool (ranx / Drift-Adapter for ReindexGate, ragfallback for Deadstage, SCORE-Bench for ChunkLedger, ContextCite / parametric-leak papers for RAGForensics, …).
+3. **Clean-room** — reimplemented from public methods; no incumbent source vendored.
+4. **Self-contained** — numpy + stdlib only; each tool is its own directory. This is by design,
+   not an oversight: there is no shared package and no `pyproject.toml`/`setup.py`, so no tool
+   is pip-installable or importable outside this repo — run each one as a script from the repo
+   root as shown above.
+
+## Versioning
+
+No tagged releases yet. Once a commit passes CI it will be tagged `vX.Y.Z`
+following semantic versioning — see `CHANGELOG.md`.
+
+## Status
+
+Portfolio project demonstrating the pattern end-to-end — not a hardened production library.
+See each tool's Honest Scope section for what is and isn't proven.

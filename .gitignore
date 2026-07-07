@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+out/
+chunkledger/prior.json
+covgate/current.json
+.venv/
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

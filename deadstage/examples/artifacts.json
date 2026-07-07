@@ -1,0 +1,10 @@
+{
+  "docs":       [{"id": "d0", "text": "revenue rose in the northern region"},
+                 {"id": "d1", "text": "operating margin held steady this quarter"}],
+  "index_ids":  ["d0", "d1"],
+  "embeddings": [[0.9, 0.1, 0.0, 0.1], [0.1, 0.9, 0.2, 0.0]],
+  "queries":    ["what happened to revenue?"],
+  "retrieval":  [[["d0", 0.91], ["d1", 0.40]]],
+  "dim": 4,
+  "k": 2
+}

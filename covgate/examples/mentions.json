@@ -1,0 +1,7 @@
+[
+  {"entity": "RFCX9001", "source_type": "rfc_body", "detail": "own record"},
+  {"entity": "RFCX9001", "source_type": "errata", "detail": "erratum filed"},
+  {"entity": "RFCX9001", "source_type": "citing_rfcs", "detail": "cited by RFCX9010"},
+  {"entity": "RFCX9001", "source_type": "iana_registry", "detail": "registered"},
+  {"entity": "RFCX9002", "source_type": "rfc_body", "detail": "own record"}
+]

@@ -1,0 +1,4 @@
+# Tested against numpy==2.5.0 on Python 3.12.13 (this repo's dev environment).
+# Range kept wide enough for the CI matrix (Python 3.10-3.12); no known
+# breaking API usage outside this range.
+numpy>=1.24,<3
