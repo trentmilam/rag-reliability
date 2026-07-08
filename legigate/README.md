@@ -1,27 +1,32 @@
 # Legigate
 
-**Reference-free, per-chunk OCR/parse *legibility* gate for RAG ingestion.**
+When a scanned document gets OCR'd (optical character recognition, turning a scanned image into
+text) or parsed for layout, the extraction can quietly scramble the structure — columns get
+interleaved, tables collapse into a blob of text — even though every individual word still reads
+fine. Legigate catches chunks with that kind of structural damage before they get indexed.
+
+More precisely, it is a reference-free, per-chunk OCR/parse legibility gate for RAG ingestion.
 It scores already-extracted text — no source images, no ground-truth reference —
-and quarantines chunks whose *structure* was corrupted during OCR/layout
+and quarantines chunks whose structure was corrupted during OCR/layout
 parsing, before they poison the index.
 
-## The narrow wedge (the only novelty claimed)
+## What's new here (and what isn't)
 
 Existing corpus-cleaning tools (see Prior art) already do a good job on the
-**commodity** text-quality pillars: encoding/mojibake repair and generic
-gibberish / language-ID filtering. Legigate deliberately **drops those pillars**
-and owns only the two **structural** signals that those tools underserve, and
-packages them as a **pre-index quarantine gate**:
+commodity text-quality pillars: encoding/mojibake repair and generic
+gibberish / language-ID filtering. Legigate deliberately drops those pillars
+and owns only the two structural signals that those tools underserve, and
+packages them as a pre-index quarantine gate:
 
-1. **Reading-order scramble** — column bleed / interleaved lines from
-   multi-column pages. Detected by *local-coherence transition scoring*: with a
+1. Reading-order scramble — column bleed / interleaved lines from
+   multi-column pages. Detected by local-coherence transition scoring: with a
    tiny vendored hashing embedder, correctly-ordered prose has adjacent lines
    that are more lexically related than lines two apart
    (`mean cos(i, i+1) > mean cos(i, i+2)`). When two columns are interleaved
    (`A1,B1,A2,B2,…`) the true continuation is two lines away, so that inequality
-   **inverts**. The signed margin is squashed to a `[0,1]` legibility score.
+   inverts. The signed margin is squashed to a `[0,1]` legibility score.
 
-2. **Collapsed / merged table structure** — cell-boundary loss during
+2. Collapsed / merged table structure — cell-boundary loss during
    extraction. Content that still *looks* tabular (short lines, regular token
    counts, numeric density) is re-parsed for cells via multi-space / tab / pipe
    delimiters. A well-formed table yields ≥2 aligned, consistently-counted cells

@@ -1,6 +1,12 @@
 # SyncGate
 
-A **label-free incremental-sync + cross-document reference-integrity gate**
+When a corpus updates incrementally, only the changed documents should get reprocessed, and any
+document that points at another one by ID should still resolve to something real. SyncGate checks
+both: it flags exactly what changed since the last sync, and it tells apart a reference that's
+gone stale (the target moved but an older cached copy still exists) from one that's genuinely
+broken (the target never existed at all).
+
+More precisely, it is a label-free incremental-sync and cross-document reference-integrity gate
 for RAG pipelines. It answers two questions most ingestion pipelines answer
 with silence or a shrug:
 
@@ -16,31 +22,31 @@ or an erratum's "corrects" pointer). It reports exactly which files need
 reprocessing and a three-way verdict — `LIVE` / `STALE_CACHED` / `DANGLING` —
 for every reference.
 
-## The narrow novelty wedge (the only thing claimed as new)
+## What's new here (and what isn't)
 
 Nothing here is a new hashing or graph algorithm. The wedge is in what gets
 reported and how the failure modes are separated:
 
-1. **Three named sync/reference states, not one boolean.** Most "does this
+1. Three named sync/reference states, not one boolean. Most "does this
    reference still work" checks collapse to `dict.get(ref) is None`: a single
    True/False. That conflates two structurally different situations — a
-   target that was **renamed or superseded** (recoverable: serve a
-   last-known-good cached snapshot, flagged stale) and a target that **never
-   existed at all** (a hard failure — never fabricate a target). SyncGate's
+   target that was renamed or superseded (recoverable: serve a
+   last-known-good cached snapshot, flagged stale) and a target that never
+   existed at all (a hard failure — never fabricate a target). SyncGate's
    `resolve_reference` keeps these distinct: `LIVE` / `STALE_CACHED` /
-   `DANGLING`. This is **measured**, not asserted — see the head-to-head in
+   `DANGLING`. This is measured, not asserted — see the head-to-head in
    `eval.py`: on the exact same fixture the naive presence check flags a
-   renamed entity and a never-existed entity **identically** (`True`/`True`,
+   renamed entity and a never-existed entity identically (`True`/`True`,
    "missing"), while SyncGate reports `STALE_CACHED` for one and `DANGLING`
    for the other, naming the exact broken edge (`from`/`to`/`reason`).
-2. **Self-referential incremental diff.** `changed_files` needs no external
+2. Self-referential incremental diff. `changed_files` needs no external
    "what should have changed" oracle — the hash comparison against the prior
    watermark IS the ground truth. `eval.py` measures the reduction directly
    against the naive incumbent ("reprocess everything every run"): editing 1
    of 6 files reprocesses 1/6, a **6.0× reduction**, not an assumed one.
-3. **`reference_closure` as the explicit naive-equivalent primitive.** Rather
+3. `reference_closure` as the explicit naive-equivalent primitive. Rather
    than hiding the naive check inside a strawman, SyncGate's own strict
-   (cache-blind) closure function computes the *same* thing a `dict.get`
+   (cache-blind) closure function computes the same thing a `dict.get`
    check would — so the three-way fallback's improvement over it is visible
    in the API surface, not just in the demo.
 

@@ -1,12 +1,17 @@
 # Headroom — hardware-aware agentic-RAG budget governor
 
-A tiny library a RAG framework consults **before escalating another retrieval /
-reasoning hop**. It reads GPU telemetry — **VRAM headroom, thermal margin to the
-throttle/abort line, and the measured per-hop latency budget** — and returns
-`ALLOW` / `DEFER` / `DENY`. The escalation decision becomes *physical*, not just
+An agentic RAG system can keep retrieving and reasoning in a loop, chasing a better answer one more
+hop at a time. Headroom is the check that stops it from doing that when the GPU running it is
+about to run out of memory or overheat, even if the software logic thinks one more hop is a good
+idea.
+
+More precisely: it is a tiny library a RAG framework consults before escalating another retrieval /
+reasoning hop. It reads GPU telemetry — VRAM headroom, thermal margin to the
+throttle/abort line, and the measured per-hop latency budget — and returns
+`ALLOW` / `DEFER` / `DENY`. The escalation decision becomes physical, not just
 economic.
 
-## The narrow wedge (the only novelty claimed)
+## What's new here (and what isn't)
 
 Existing adaptive-RAG governors decide *whether to do another hop* from
 **token cost and answer sufficiency**:
@@ -140,6 +145,6 @@ no wall-clock, no `random`.
 - Cost-aware RAG (CA-RAG) — token/dollar-budgeted retrieval with a sufficiency
   estimate.
 
-Headroom claims novelty **only** on the hardware-physics gate (measured VRAM /
+The only part Headroom claims as new is the hardware-physics gate (measured VRAM /
 thermal / latency margin as the hop-escalation criterion), not on adaptive
 retrieval, agentic loops, or cost-aware budgeting in general.

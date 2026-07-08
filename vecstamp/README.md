@@ -2,10 +2,12 @@
 
 ## What it does
 
-A RAG index is only valid if the embedder that **serves queries at load time**
-reproduces the embedder that **built the index**. When that invariant silently
-breaks — a quantized serving copy, a dropped normalization step, a swapped
-model, a changed projection dim — retrieval quietly degrades with no error.
+Embedding is the step that turns text into the numeric vectors a RAG system searches over. A RAG
+index is only valid if the embedder answering live queries is still the same one that built the
+index in the first place. VecStamp catches it when that quietly stops being true — a quantized
+serving copy, a dropped normalization step, a swapped model, a changed projection dimension — and
+tells you exactly how it drifted instead of just saying "mismatch." Left unchecked, retrieval
+quietly degrades with no error.
 
 VecStamp turns that invariant into a checkable **certificate**:
 
@@ -25,7 +27,7 @@ VecStamp turns that invariant into a checkable **certificate**:
   | `quant-dtype-drift` | same model, tiny numeric perturbation (e.g. q8) | cosine ≥ 0.98, norms ≈ 1 |
   | `wrong-weights` | a genuinely different model | near-orthogonal (cosine ≈ 0) |
 
-## The narrow novelty wedge
+## What's new here (and what isn't)
 
 The novel piece is **not** "fingerprint the embedder" and **not** "hash the
 vectors" — both are prior art (see below). The wedge is the **failure-typing

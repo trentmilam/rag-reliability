@@ -1,17 +1,22 @@
 # CovGate
 
-A **corpus-wide gap-hunting audit against an external authoritative
-registry** for RAG pipelines. It answers a question that is easy to overlook
+CovGate guards the coverage stage: it checks whether a corpus actually talks about the things it
+should, not just whether a keyword shows up somewhere in it. It catches entities that look "well
+covered" by a naive word count but are really only ever mentioned in their own record, never
+independently confirmed by anything else in the corpus.
+
+More precisely, it is a corpus-wide gap-hunting audit against an external authoritative
+registry for RAG pipelines. It answers a question that is easy to overlook
 entirely because there is no error to see:
 
 > Of everything the authoritative source says exists, what did my corpus
-> never actually talk about anywhere *else* — never cross-referenced, never
+> never actually talk about anywhere else — never cross-referenced, never
 > corrected, never independently corroborated?
 
 Given a registry of known entity IDs (e.g. every RFC number a real RFC index
 says exists) and a set of mentions tagged by source type (an RFC's own body,
-errata, other RFCs citing it, an IANA-style registry, …), CovGate scores each
-entity's **`type_coverage`** — the fraction of *other* source types that
+errata, other RFCs citing it, an IANA-style registry, and so on), CovGate scores each
+entity's `type_coverage` — the fraction of other source types that
 corroborate it, explicitly excluding the entity's own defining/authoritative
 record — and buckets it `orphan` / `thin` / `adequate`.
 
@@ -33,19 +38,19 @@ check opposite failure modes:
   no byte span to point at; the unit of analysis is an entity's
   cross-source corroboration.
 
-## The narrow novelty wedge (the only thing claimed as new)
+## What's new here (and what isn't)
 
-1. **Coverage excludes the entity's own authoritative source by
-   construction**, not as an afterthought filter. This is **measured**, not
+1. Coverage excludes the entity's own authoritative source by
+   construction, not as an afterthought filter. This is measured, not
    asserted — see the head-to-head in `eval.py`: an entity mentioned **50
    times**, every mention inside its own defining record, reads as
    "well covered" (count ≥ 5) to a naive keyword-frequency audit, while
-   CovGate's `type_coverage=0.0` correctly reveals **zero** independent
+   CovGate's `type_coverage=0.0` correctly reveals zero independent
    corroboration. The fixture also includes two fairness anchors — a
    genuinely well-corroborated entity and a genuinely under-discussed one —
-   where **both** metrics agree, so the trap case is a real disagreement, not
+   where both metrics agree, so the trap case is a real disagreement, not
    a rigged strawman.
-2. **`coverage_drift` as a severity-regression list**, structurally parallel
+2. `coverage_drift` as a severity-regression list, structurally parallel
    to ChunkLedger's own `drift_gate` (same prior/current dict-in contract),
    but shaped as "which entities got worse" rather than a single trip switch
    — because a coverage audit's natural output is a punch list, not a

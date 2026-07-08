@@ -1,9 +1,14 @@
 # RAGForensics
 
-Label-free, offline diagnostics for a RAG stack: given only a black-box
-`answer(query, passages) -> str` endpoint and its retriever, **attribute a failure to
-the retriever vs. the generator, and raise a parametric-leak flag — without any gold
-answers or relevance judgments.** Shipped as a deterministic CI gate.
+When a RAG system gives a wrong or made-up answer, RAGForensics figures out where the fault
+actually is: did retrieval fetch the wrong documents, or did the model ignore good documents and
+answer from what it already knew (a "parametric leak," where the model's own memory overrides the
+sources it was given)? It does this without needing a human-labeled set of correct answers.
+
+More precisely: it is label-free, offline diagnostics for a RAG stack, given only a black-box
+`answer(query, passages) -> str` endpoint and its retriever. It attributes a failure to
+the retriever vs. the generator, and raises a parametric-leak flag, without any gold
+answers or relevance judgments. Shipped as a deterministic CI gate.
 
 ## Honest scope
 

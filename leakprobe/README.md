@@ -1,12 +1,17 @@
 # Leakprobe — retrievability-ranked PII audit with minimal redaction
 
+Leakprobe checks whether personal information (PII, like emails or names) hiding in a document
+corpus can actually be surfaced by a search query, and redacts only the PII that really can be, so
+a blanket privacy scrub doesn't also blank out harmless text a retriever would never have returned
+anyway.
+
 ## What it is
 
-Leakprobe audits a RAG corpus for PII, but instead of flagging *every*
-occurrence it ranks each detected span by whether the PII is **actually
-reachable** — i.e. whether a live vector index surfaces the span's chunk in
-top-k for an auto-synthesized, PII-eliciting query. It then recommends the
-**minimal redaction set**: redact only what is reachable. The payoff is
+Leakprobe audits a RAG corpus for PII, but instead of flagging every
+occurrence it ranks each detected span by whether the PII is actually
+reachable — i.e. whether a live vector index (the searchable store retrieval runs against) surfaces
+the span's chunk in the top results for an auto-synthesized, PII-eliciting query. It then
+recommends the minimal redaction set: redact only what is reachable. The payoff is
 retrieval recall preserved versus a blanket mask, because unreachable PII
 (boilerplate footers, long tails) is left intact.
 
@@ -27,7 +32,7 @@ Pipeline (`leakprobe.py`):
    vector, the real retrieval cost), and `recall_at_k` quantifies utility on a
    held set of legitimate queries.
 
-## The narrow novelty wedge (and only this)
+## What's new here (and what isn't)
 
 **Per-span, live-index top-k retrievability scoring driving a minimal,
 recall-preserving redaction set.** That is the whole claim. Everything else

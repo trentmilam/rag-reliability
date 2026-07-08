@@ -1,17 +1,22 @@
 # Deadstage
 
-A judge-free RAG liveness gate that **names the single dead stage**.
+Deadstage checks whether a RAG pipeline is actually alive end to end, and if one stage of it has
+quietly died, it names that exact stage instead of just reporting that the final answer looks
+wrong.
 
 ## What it is
 
-A **read-only probe** over a RAG pipeline's *artifacts* (not its source). It
+A judge-free RAG liveness gate that names the single dead pipeline stage. It is
+a read-only probe over a RAG pipeline's artifacts (not its source). It
 asserts one structural invariant per stage across
 
 ```
 ingest -> index -> embed -> retrieve -> score
 ```
 
-and, walking the stages in order, prints the **single earliest** stage whose
+(ingest loads the documents in, index stores them for search, embed turns text into the numeric
+vectors search runs on, retrieve pulls candidates for a query, score ranks them), and, walking
+the stages in order, prints the **single earliest** stage whose
 invariant fails, with a short reason and the measured number. It returns a
 non-zero exit code so it can gate CI.
 
@@ -27,9 +32,9 @@ degraded results. Deadstage takes the opposite posture: **assert and name, do
 not mask.** When a stage is structurally dead, the gate says which one and
 fails loudly.
 
-Novelty is claimed **only** on that assert-and-name posture plus the
+The only part claimed as new is that assert-and-name posture, plus the
 first-dead-stage attribution. The invariants themselves are standard and are
-**not** claimed as new (see Prior art).
+not claimed as new (see Prior art).
 
 ## Invariants (per stage)
 
@@ -167,11 +172,11 @@ with a known injected root cause plus its realistic downstream symptom(s):
 
 | fixture        | true root | Deadstage (first) | symptom baseline (last) |
 |----------------|-----------|-------------------|-------------------------|
-| healthy        | —         | — ✅              | — ✅                    |
-| embed_root     | embed     | embed ✅          | score ❌                |
-| index_root     | index     | index ✅          | retrieve ❌             |
-| retrieve_root  | retrieve  | retrieve ✅       | score ❌                |
-| score_root     | score     | score ✅          | score ✅                |
+| healthy        | —         | — (correct)              | — (correct)                    |
+| embed_root     | embed     | embed (correct)          | score (wrong)                |
+| index_root     | index     | index (correct)          | retrieve (wrong)             |
+| retrieve_root  | retrieve  | retrieve (correct)       | score (wrong)                |
+| score_root     | score     | score (correct)          | score (correct)                |
 
 **Measured (this repo, deterministic):** Deadstage attributes the root cause
 **5/5 = 100%**; the symptom baseline **2/5 = 40%** (a **+60-point gap**). The

@@ -1,37 +1,43 @@
 # ReindexGate — label-free retrieval-regression CI gate
 
-Point ReindexGate at an **OLD** and a **NEW** retrieval index and it tells you,
-in CI, whether the reindex made retrieval **meaningfully worse** — **without any
-relevance labels (qrels) and without an LLM judge**. It fails the build when the
+Rebuilding a search index (a "reindex," e.g. after swapping in a new embedding model — the piece
+that turns text into searchable vectors — or a new chunking strategy) can quietly make retrieval
+worse without anyone noticing until users complain. ReindexGate catches that regression
+automatically in CI, without needing a human-labeled set of "correct" search results to compare
+against.
+
+More precisely: point ReindexGate at an OLD and a NEW retrieval index and it tells you,
+in CI, whether the reindex made retrieval meaningfully worse, without any
+relevance labels (qrels) and without an LLM judge. It fails the build when the
 new index regresses, and passes a no-op reindex.
 
-## The narrow wedge (what is actually novel here)
+## What's new here (and what isn't)
 
-Every existing offline IR-eval path needs *something* ReindexGate does without:
+Every existing offline IR-eval path needs something ReindexGate does without:
 
-- **`ranx` / `pytrec_eval`** compute nDCG/MAP/RBO beautifully — **but require
-  qrels** (human relevance judgments) you usually do not have in a product repo.
-- **LLM-as-judge** reindex checks need a model, are non-deterministic, cost
+- `ranx` / `pytrec_eval` compute nDCG/MAP/RBO beautifully, but require
+  qrels (human relevance judgments) you usually do not have in a product repo.
+- LLM-as-judge reindex checks need a model, are non-deterministic, cost
   money, and cannot run air-gapped in CI.
-- **Raw rank-overlap (RBO alone)** tells you *rankings changed*, not whether they
-  changed *for the worse*.
+- Raw rank-overlap (RBO alone) tells you rankings changed, not whether they
+  changed for the worse.
 
-ReindexGate's wedge is the **combination**, offline and deterministic:
+ReindexGate's wedge is the combination, offline and deterministic:
 
-1. **label-free** — probe queries are auto-mined from the corpus (known-item /
-   inverse-cloze convention); the relevant target is known *structurally*, not
+1. Label-free — probe queries are auto-mined from the corpus (known-item /
+   inverse-cloze convention); the relevant target is known structurally, not
    from a human label;
-2. **judge-free** — relevance is a fixed, **system-independent** pseudo-relevance
+2. Judge-free — relevance is a fixed, system-independent pseudo-relevance
    signal (reference-embedding similarity to the query's source document), never
    an LLM and never derived from OLD or NEW. Independence is concrete, not
-   asserted: the oracle is built in a **distinct hash family** (`REF_ORACLE_SEED`,
+   asserted: the oracle is built in a distinct hash family (`REF_ORACLE_SEED`,
    near-orthogonal to the `REF_SEED` that OLD/NEW use), so its similarity matrix
    is not byte-identical to either index under test (enforced by the
    `[INDEPENDENCE]` checks in `eval.py`);
-3. **pooling-bias-corrected index-vs-index delta** — relevance is judged on the
-   **union pool** of both systems' results, so a document found only by NEW is
+3. Pooling-bias-corrected index-vs-index delta — relevance is judged on the
+   union pool of both systems' results, so a document found only by NEW is
    judged fairly instead of assumed non-relevant (the classic pooling bias);
-4. **delta-with-CI + a reindex CI-fail gate** — a bootstrap confidence interval
+4. Delta-with-CI plus a reindex CI-fail gate — a bootstrap confidence interval
    over queries turns "NEW looks a bit worse" into a **decision**: fail only when
    the CI is separated below zero by a margin.
 

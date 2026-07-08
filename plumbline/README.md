@@ -1,27 +1,30 @@
 # Plumbline
 
-**Deterministic chunk→source provenance gate for RAG indexes.**
+When a RAG system cites a source, that citation should trace back to a real, findable spot in the
+original document. Plumbline checks that provenance link (which source span a chunk actually came
+from) and catches it breaking silently, especially after a reindex moves or drops content.
 
-Plumbline proves, at **index time** and with a **fully deterministic** mechanism,
+More precisely, it is a deterministic chunk-to-source provenance gate for RAG indexes.
+Plumbline proves, at index time and with a fully deterministic mechanism,
 that every stored chunk's text traces back to a real span in its source document
-under **whitespace/OCR/normalization-aware fuzzy alignment** — then, across a
-reindex, it emits a **diffable provenance manifest** and reports exactly which
-citations **lost coverage** and where the survivors **drifted**.
+under whitespace/OCR/normalization-aware fuzzy alignment — then, across a
+reindex, it emits a diffable provenance manifest and reports exactly which
+citations lost coverage and where the survivors drifted.
 
 No model, no network, no GPU. numpy + stdlib only.
 
-## The narrow wedge (the only thing claimed as novel)
+## What's new here (and what isn't)
 
 Two capabilities, combined, at index time and deterministically:
 
-1. **Canonicalization-aware span realignment.** A stored chunk that was OCR'd or
+1. Canonicalization-aware span realignment. A stored chunk that was OCR'd or
    whitespace-normalized (`o`→`0`, `l`→`1`, `fi`→ligature, collapsed spaces) no
    longer matches the source byte-for-byte. Plumbline canonicalizes source and
-   chunk through the *same* transform, aligns in canonical space, and maps the
-   match back to **original source offsets**. A naive exact-substring / content-
-   hash check **false-fails** on exactly these legitimate chunks.
+   chunk through the same transform, aligns in canonical space, and maps the
+   match back to original source offsets. A naive exact-substring / content-
+   hash check false-fails on exactly these legitimate chunks.
 
-2. **Cross-reindex coverage-loss diff.** Given two provenance manifests (before
+2. Cross-reindex coverage-loss diff. Given two provenance manifests (before
    and after a reindex), Plumbline reports per citation: `LOST` (no longer
    resolves), `DRIFTED` (resolves to a moved span — with `from`/`to`/`delta`),
    `STABLE` (unchanged), or `GAINED` (unresolved in the baseline, now resolves —

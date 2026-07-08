@@ -1,40 +1,45 @@
 # ChunkLedger
 
-A **label-free ingestion conservation law** for RAG pipelines. It answers one
+ChunkLedger watches the ingestion stage of a RAG pipeline, where a document gets split into
+chunks — the small pieces a RAG system actually stores and retrieves. It catches chunkers that
+silently drop or duplicate part of a document, like an entire table disappearing, with nothing
+raising an error to say so.
+
+More precisely, it is a label-free ingestion conservation law for RAG pipelines. It answers one
 narrow question that most ingestion stacks answer with silence:
 
-> When my chunker turned this document into chunks, did any **structural
-> content silently disappear or get duplicated** — and if so, *which bytes*?
+> When my chunker turned this document into chunks, did any structural
+> content silently disappear or get duplicated — and if so, which bytes?
 
-ChunkLedger parses a source document into typed structural elements — **tables,
-code blocks, headings, list items, links, numeric spans** — each with a byte
+ChunkLedger parses a source document into typed structural elements (tables,
+code blocks, headings, list items, links, numeric spans), each with a byte
 range, then verifies element-by-element that the content survived into the union
-of the emitted chunks. It reports a **per-type conservation ratio** ("tables:
-2/3 conserved"), a **byte-level manifest** of every dropped/duplicated span, and
-a **run-over-run drift gate** for CI that trips on per-type regression.
+of the emitted chunks. It reports a per-type conservation ratio ("tables:
+2/3 conserved"), a byte-level manifest of every dropped/duplicated span, and
+a run-over-run drift gate for CI that trips on per-type regression.
 
-## The narrow novelty wedge (the only thing claimed as new)
+## What's new here (and what isn't)
 
 Existing ingestion-quality checks compare against an external gold reference or
-score an **aggregate token ratio** across the whole document. ChunkLedger's wedge
+score an aggregate token ratio across the whole document. ChunkLedger's wedge
 is different on three specific axes:
 
-1. **Per structural-element-type conservation**, not one document-wide number.
+1. Per structural-element-type conservation, not one document-wide number.
    "≈90% of tokens survived" hides "a whole table vanished"; `tables: 2/3` does not.
-   This is **measured**, not asserted — see the head-to-head below: on the exact
+   This is measured, not asserted — see the head-to-head below: on the exact
    same dropping-chunker output the incumbent aggregate token-ratio reads **0.898**
    (looks fine) while ChunkLedger reports `tables 2/3` (0.667) + the dropped byte
    range `[298, 396]`; drop a whole list block and the aggregate reads **0.889**
    while `list_items` goes to **0/3**.
-2. **Self-referential / label-free.** The *parsed source is its own reference* —
+2. Self-referential and label-free. The parsed source is its own reference —
    no gold chunk set, no human labels, no "expected table count" to maintain.
    You can run it on any document you already have.
-3. **Run-over-run drift as a CI gate**, keyed per type, so a chunker/config change
+3. Run-over-run drift as a CI gate, keyed per type, so a chunker/config change
    that starts dropping list items trips the build even if the aggregate ratio
    barely moves.
 
 Everything else here (character-shingle anchoring, LCS-style overlap, markdown
-parsing) is standard and **not** claimed as novel.
+parsing) is standard and not claimed as novel.
 
 ## Prior art (cited, and how this differs)
 

@@ -1,11 +1,16 @@
 # GraphRx — a GraphRAG structural linter with retrieval-poisoning scoring
 
-Point GraphRx at a built GraphRAG graph (entities + relationships + communities, as a plain
-Python adjacency dict) and it returns a **ranked report of structural defects** — ER (entity-
-resolution) collisions, over-/under-merged communities, hub pollution, orphans — where each
-defect is **scored by how much it poisons GraphRAG *answers***, not by generic graph-health
-metrics. Every proposed **merge/split repair** is then **validated by a before/after retrieval-
-poisoning-delta harness**: a repair only earns credit if it measurably lowers poisoning on a
+GraphRAG is a variant of RAG that retrieves from a graph of entities and relationships instead of
+plain text chunks. GraphRx checks that graph for structural defects that would poison answers —
+two unrelated entities merged into one node, a community of topics merged that shouldn't be — and
+ranks them by how much damage they'd actually do, not by generic graph-health scores.
+
+More precisely: point GraphRx at a built GraphRAG graph (entities, relationships, and communities,
+as a plain Python adjacency dict) and it returns a ranked report of structural defects — ER
+(entity-resolution) collisions, over-/under-merged communities, hub pollution, orphans — where each
+defect is scored by how much it poisons GraphRAG answers, not by generic graph-health
+metrics. Every proposed merge/split repair is then validated by a before/after retrieval-
+poisoning-delta harness: a repair only earns credit if it measurably lowers poisoning on a
 traversal probe.
 
 ## Quickstart
@@ -89,8 +94,8 @@ i.e. the full repo-root-relative path is `graphrx/graphrx/embed.py`.
 ## Prior art & how this differs
 
 - **Yu et al., "Knowledge Graph Health Assessment"** (the Neo4j-only article/tooling) — assesses
-  KG health with graph-native metrics, **inside Neo4j**. GraphRx's **narrow wedge** is threefold and
-  none of it is claimed beyond that: (1) it is **not Neo4j-bound** — it operates on a plain
+  KG health with graph-native metrics, **inside Neo4j**. What GraphRx adds is threefold and
+  nothing is claimed beyond that: (1) it is **not Neo4j-bound** — it operates on a plain
   adjacency dict, so it fits any GraphRAG store; (2) defects are scored through a **retrieval-
   poisoning lens** (impact on the *answer*: conflated evidence + traversal fan-out), not generic
   graph health; (3) each repair is **validated by a measured poisoning delta**, not asserted.
