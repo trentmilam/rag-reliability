@@ -1,16 +1,16 @@
-"""CovGate -- corpus-wide gap-hunting against an external authoritative registry.
+"""CovGate: corpus-wide gap-hunting against an external authoritative registry.
 
-Explicitly NOT a ChunkLedger reskin. ChunkLedger (`chunkledger/chunkledger.py`)
+Explicitly not a ChunkLedger reskin. ChunkLedger (`chunkledger/chunkledger.py`)
 is SELF-referential: it proves nothing already-ingested was *dropped* during
 one document's own chunking, checked against that same document at
 chunk-boundary granularity. CovGate checks a different failure mode entirely:
 it compares the WHOLE corpus against an EXTERNAL authoritative registry (e.g.
-the real, complete RFC index -- every RFC number the index says exists) to
+the real, complete RFC index: every RFC number the index says exists) to
 find entities that were never actually written about, cross-referenced, or
 corrected anywhere else in the corpus. That content isn't lost in
-transformation -- it was simply never surfaced anywhere but its own record.
+transformation; it was simply never surfaced anywhere but its own record.
 
-The wedge: for each entity in the registry, score
+The core idea: for each entity in the registry, score
 
     type_coverage = (# of DISTINCT *other* source types that mention it)
                     / (total other source types available)
@@ -18,19 +18,19 @@ The wedge: for each entity in the registry, score
 explicitly EXCLUDING the entity's own defining/authoritative source (an RFC's
 own body always "mentions" itself; that is not corroboration). An entity is:
 
-  * orphan   -- zero corroboration from any other source type;
-  * thin     -- corroborated, but coverage is very low or the raw mention
+  * orphan: zero corroboration from any other source type;
+  * thin: corroborated, but coverage is very low or the raw mention
                 count is below a documented floor;
-  * adequate -- otherwise.
+  * adequate: otherwise.
 
 `coverage_drift` is CovGate's run-over-run companion, structurally parallel to
 ChunkLedger's own `drift_gate` (`chunkledger.py:drift_gate(prior, current,
 eps) -> dict`): same dict-in/dict-in "did anything get WORSE" contract, applied
-to entity coverage severity instead of per-type conservation ratios. It
-differs in shape on purpose -- it returns a LIST of the entities that
-regressed (empty == no regression) rather than a `{"tripped": ...}` boolean
-envelope, because a coverage audit's natural output is "which entities need a
-look", not a single CI trip switch.
+to entity coverage severity instead of per-type conservation ratios. Its shape
+differs: it returns a LIST of the entities that regressed (empty == no
+regression) rather than a `{"tripped": ...}` boolean envelope, because a
+coverage audit's natural output is "which entities need a look", not a single
+CI trip switch.
 
 Deterministic, offline, stdlib only (no numpy needed: this is dict/set
 bookkeeping, not numeric scoring). No network, no wall-clock, no RNG.
@@ -175,8 +175,8 @@ def coverage_drift(previous_run: dict, current_run: dict) -> list[dict]:
     """Run-over-run regression list: entities whose severity WORSENED.
 
     Structurally parallel to ChunkLedger's `drift_gate(prior, current, eps) ->
-    dict` -- same dict-in/dict-in contract over a prior/current JSON-shaped
-    run (as produced by `GateResult.to_dict()`) -- applied to entity coverage
+    dict`: same dict-in/dict-in contract over a prior/current JSON-shaped
+    run (as produced by `GateResult.to_dict()`), applied to entity coverage
     severity instead of per-type conservation ratios. Shape differs on
     purpose: this returns a LIST of the regressed entities (empty == clean)
     rather than drift_gate's `{"tripped": bool, "regressions": [...]}`

@@ -24,10 +24,10 @@ Upstream death produces downstream symptoms (a dead embedder makes retrieval
 and scoring look broken too), so naming the *first* dead stage points at the
 root cause instead of the last thing that threw an exception.
 
-## The wedge (positioning, not invention)
+## Positioning, not invention
 
 Fallback / failover layers keep a broken pipeline **answering** by routing
-around the dead component — the pipeline stays "green" while silently serving
+around the dead component. The pipeline stays "green" while silently serving
 degraded results. Deadstage takes the opposite posture: **assert and name, do
 not mask.** When a stage is structurally dead, the gate says which one and
 fails loudly.
@@ -48,9 +48,9 @@ not claimed as new (see Prior art).
 
 The **embed** stage carries two representational-collapse checks:
 
-- `collapsed/zero-norm` — vectors with ~zero L2 norm (embedder deprecated / not
+- `collapsed/zero-norm`: vectors with ~zero L2 norm (embedder deprecated / not
   loaded / all-zero output).
-- `anisotropic-collapse` — vectors present but crowding into one direction
+- `anisotropic-collapse`: vectors present but crowding into one direction
   (mean off-diagonal cosine above a floor); grounded in the embedding
   **anisotropy** literature.
 
@@ -64,11 +64,11 @@ python deadstage/deadstage.py --pipeline deadstage/examples/pipeline.json --json
 ```
 
 `examples/pipeline.json` and `examples/artifacts.json` are small, runnable
-fixtures matching the schemas below — both are healthy (exit 0) out of the box.
+fixtures matching the schemas below; both are healthy (exit 0) out of the box.
 
 Exactly one of `--pipeline` / `--artifacts` is required. `--pipeline` manufactures
 a self-consistent pipeline from the vendored embedder (a demo/self-test path);
-`--artifacts` is the real ingestion path — it probes `index_ids` / `embeddings` /
+`--artifacts` is the real ingestion path: it probes `index_ids` / `embeddings` /
 `retrieval` a live pipeline already emitted, so the retrieve and score stages are
 reachable on real (possibly inconsistent) data. Exit 0 healthy / 2 dead.
 
@@ -85,7 +85,7 @@ the vendored hashing embedder, then probes the artifacts):
 }
 ```
 
-`artifacts.json` schema (externally-captured — the tool probes these directly,
+`artifacts.json` schema (externally-captured; the tool probes these directly,
 it does NOT re-embed):
 
 ```json
@@ -119,18 +119,18 @@ rep.healthy                 # bool
 `from_artifacts` is what makes the retrieve/score stages reachable on real data:
 `build_pipeline` always recomputes a self-consistent retrieval from the
 embeddings, so it can never emit a state where (say) the embedder is dead *and*
-the retriever independently returns an out-of-index id — the exact
+the retriever independently returns an out-of-index id, the exact
 multi-symptom states that occur in production.
 
 ## Red/green self-test
 
 `eval.py` is the first-milestone red/green gate. It builds **real** pipeline
-artifacts and runs the **real** probe — no hard-coded verdicts:
+artifacts and runs the **real** probe, with no hard-coded verdicts:
 
-- **RED** — deprecate the embedder to zero-vectors. The `embed` norm invariant
+- **RED:** deprecate the embedder to zero-vectors. The `embed` norm invariant
   fires; the probe must name exactly `embed` / `collapsed/zero-norm`, keep
   ingest+index live, and return the dead verdict.
-- **GREEN** — same corpus with a healthy embedder passes every stage.
+- **GREEN:** same corpus with a healthy embedder passes every stage.
 
 ```bash
 python deadstage/eval.py    # exit 0 iff RED catches the fault AND GREEN passes
@@ -157,13 +157,13 @@ SELF-TEST PASS
 
 Real exit code: **0**.
 
-## Measured wedge: root-cause attribution vs symptom monitoring (A/B)
+## Root-cause attribution vs symptom monitoring, measured (A/B)
 
-The wedge ("name the *first* dead stage, not the downstream symptom") is not just
-asserted — `eval.py` measures it against a **fair incumbent baseline**:
+The claim ("name the *first* dead stage, not the downstream symptom") isn't just
+asserted. `eval.py` measures it against a **fair incumbent baseline**:
 symptom-based monitoring that runs the **identical** per-stage invariants (same
 detection power, not a crippled strawman) but reports the **deepest** stage where
-a problem is observed — the way real alerting fires on the visible symptom
+a problem is observed, the way real alerting fires on the visible symptom
 (empty retrieval / tied scores / a garbage answer). The only isolated variable is
 attribution **direction** (first-failing vs last-failing).
 
@@ -172,7 +172,7 @@ with a known injected root cause plus its realistic downstream symptom(s):
 
 | fixture        | true root | Deadstage (first) | symptom baseline (last) |
 |----------------|-----------|-------------------|-------------------------|
-| healthy        | —         | — (correct)              | — (correct)                    |
+| healthy        | n/a       | n/a (correct)             | n/a (correct)                   |
 | embed_root     | embed     | embed (correct)          | score (wrong)                |
 | index_root     | index     | index (correct)          | retrieve (wrong)             |
 | retrieve_root  | retrieve  | retrieve (correct)       | score (wrong)                |
@@ -181,15 +181,15 @@ with a known injected root cause plus its realistic downstream symptom(s):
 **Measured (this repo, deterministic):** Deadstage attributes the root cause
 **5/5 = 100%**; the symptom baseline **2/5 = 40%** (a **+60-point gap**). The
 baseline is right exactly when the fault *is* at the last stage (`score_root`,
-`healthy`) — confirming it is a fair comparator, not a rigged one — and wrong
+`healthy`), confirming it is a fair comparator and not a rigged one, and wrong
 whenever a live pipeline shows a downstream symptom, which is the common case a
 dead embedder or a dangling index id produces. A dead embedder in particular
 makes the baseline blame the **scorer** while Deadstage names the **embedder**.
 
-## Honest scope
+## Limits of this MVP
 
 - This is an **MVP / portfolio piece**, not a production library. It probes
-  structural liveness, not answer quality — a live pipeline can still be wrong.
+  structural liveness, not answer quality: a live pipeline can still be wrong.
 - The pipeline is a **minimal cosine-retrieval RAG** built from a vendored
   pure-python hashing embedder (BLAKE2b hashing trick, dim 256, L2-normalized).
   It is **not** a trained model; it stands in for one deterministically. The
@@ -202,19 +202,19 @@ makes the baseline blame the **scorer** while Deadstage names the **embedder**.
 - Determinism: fixed `SEED` via `numpy.random.default_rng`; no wall-clock, no
   `random`.
 
-## Prior art (cited)
+## Where the ideas come from
 
-- **ragfallback** — a failover/fallback approach that keeps RAG answering by
-  routing around failures. Deadstage is deliberately the inverse posture
-  (assert-and-name vs. mask-via-failover). *Not read; cited for contrast only.*
-- **Embedding anisotropy literature** — e.g. Ethayarajh, "How Contextual are
+- ragfallback: a failover/fallback approach that keeps RAG answering by
+  routing around failures. Deadstage takes the inverse posture: assert-and-name
+  instead of mask-via-failover. *Not read; cited for contrast only.*
+- Embedding anisotropy literature: e.g. Ethayarajh, "How Contextual are
   Contextualized Word Representations?" (2019); Gao et al., "Representation
   Degeneration Problem in Training Neural Language Models" (2019); Li et al.,
   BERT-flow (2020). Motivates the `anisotropic-collapse` embed invariant.
 
 ## Files
 
-- `deadstage.py` — probe + `check()` + `build_pipeline` / `from_artifacts` + CLI.
-- `embedder.py` — vendored deterministic hashing embedder (self-contained copy).
-- `fixtures.py` — externally-captured artifact fixtures for the A/B (deterministic).
-- `eval.py` — red/green self-test + measured root-cause-attribution A/B (exit 0 on pass).
+- `deadstage.py`: probe + `check()` + `build_pipeline` / `from_artifacts` + CLI.
+- `embedder.py`: vendored deterministic hashing embedder (self-contained copy).
+- `fixtures.py`: externally-captured artifact fixtures for the A/B (deterministic).
+- `eval.py`: red/green self-test + measured root-cause-attribution A/B (exit 0 on pass).

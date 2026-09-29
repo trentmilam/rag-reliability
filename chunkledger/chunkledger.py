@@ -1,16 +1,16 @@
-"""ChunkLedger -- label-free source->chunk mass balance per structural-element type.
+"""ChunkLedger: label-free source->chunk mass balance per structural-element type.
 
 The problem: a RAG ingestion chunker takes a source document and emits chunks.
-Silently, chunkers DROP or DUPLICATE structural content -- a whole table
-vanishes, a code block gets cut, a list is truncated -- and nobody notices
+Silently, chunkers DROP or DUPLICATE structural content. A whole table
+vanishes, a code block gets cut, a list is truncated, and nobody notices
 until retrieval quality craters weeks later. There is usually no label saying
 "this document contained 3 tables", so you cannot check completeness against a
 gold count.
 
-The wedge: ChunkLedger is SELF-REFERENTIAL. The parsed source is its OWN
+The core idea: ChunkLedger is SELF-REFERENTIAL. The parsed source is its OWN
 reference. We parse the source into structural elements (tables, code blocks,
 headings, list items, links, numeric spans), each with a byte range, then check
--- element by element -- whether that element's content survived into the union
+element by element whether that element's content survived into the union
 of the emitted chunks. The check is a real anchoring test (character-shingle
 coverage / longest-common-shingle overlap), NOT a token-count heuristic and NOT
 a hard-coded expectation.
@@ -24,9 +24,9 @@ Deterministic, offline, numpy+stdlib only. No network, no wall-clock, no RNG
 in the measurement path (a fixed SEED is threaded through eval for its fixtures).
 
 Clean-room metric names (coined here, not borrowed from any product):
-  * conservation ratio        -- fraction of a type's elements that survived
-  * element coverage          -- per-element shingle-overlap fraction in [0,1]
-  * drift gate                -- run-over-run per-type regression tripwire
+  * conservation ratio: fraction of a type's elements that survived
+  * element coverage: per-element shingle-overlap fraction in [0,1]
+  * drift gate: run-over-run per-type regression tripwire
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def _token_boundary_match(needle: str, haystack: str) -> bool:
     Requires at least one occurrence whose neighbouring characters do not extend
     the token: if the needle's first char is alphanumeric the char before it must
     not be alphanumeric, and likewise at the tail. This is what stops a short
-    element -- a bare numeric span like "12" -- from being falsely matched inside
+    element (a bare numeric span like "12") from being falsely matched inside
     an unrelated larger token such as "512".
     """
     n = len(needle)
@@ -109,7 +109,7 @@ def _member(s: str, target_text: str) -> bool:
 
     A full-length (>= SHINGLE_K char) shingle is specific enough that plain
     substring membership is safe. A SHORTER shingle arises only from a short
-    element's anchor token -- there raw substring membership fails open (a dropped
+    element's anchor token, where raw substring membership fails open (a dropped
     "12" matches inside "512"), so it must match on token boundaries.
     """
     if len(s) >= SHINGLE_K:
@@ -148,11 +148,11 @@ def anchor_shingles(src: str, e: "Element", k: int = SHINGLE_K) -> frozenset[str
 
     A SHORT element (a heading, a bare numeric span like "12") normalizes to
     fewer than k chars, so a single short shingle matches as a substring almost
-    anywhere -- a genuinely DROPPED "12" is falsely reported conserved because
+    anywhere: a genuinely DROPPED "12" is falsely reported conserved because
     its digits appear inside an unrelated token like "512" elsewhere in the chunk
     union. To anchor it to ITS OWN identity we grow the source slice outward over
     contiguous ALPHANUMERIC characters to its maximal enclosing token (so a digit
-    embedded in a word -- "1" in "Q1" -- anchors as "q1", which survives with its
+    embedded in a word, "1" in "Q1", anchors as "q1", which survives with its
     word), then rely on token-boundary membership (see ``_member``) so a
     standalone short token is not matched inside a larger one. Growing over
     alphanumerics only never crosses a whitespace/block boundary, so an element
@@ -228,7 +228,7 @@ def parse_elements(src: str) -> list[Element]:
                             _byte_off(src, block_end), text)
                 )
                 code_char_ranges.append((fence_start, block_end))
-    # (unterminated fence is ignored on purpose -- treated as prose)
+    # (an unterminated fence is not an error; it is treated as prose)
 
     def in_code_char(pos: int) -> bool:
         return any(a <= pos < b for a, b in code_char_ranges)
@@ -303,8 +303,8 @@ def build_ledger(src: str, chunks: list[str],
     """Compute per-type conservation + a byte-level drop/dup manifest.
 
     Mechanism (real, label-free): each source element is shingled, then anchored
-    against (a) the UNION of all chunk shingles -- to decide survived vs dropped
-    -- and (b) each individual chunk -- to detect duplication.
+    against (a) the UNION of all chunk shingles, to decide survived vs dropped,
+    and (b) each individual chunk, to detect duplication.
     """
     elements = parse_elements(src)
     chunk_norm = [normalize(c) for c in chunks]

@@ -7,7 +7,7 @@ context-removal-invariance distribution. The README/eval already prove that bar 
 prove it is *better* than the obvious thing it replaces. This module measures that.
 
 Fair baseline (NOT a strawman): a fixed 0.5 invariance cutoff is exactly the
-competent default a reasonable engineer ships absent any calibration -- the natural
+competent default a reasonable engineer ships absent any calibration, the natural
 midpoint of the [0,1] invariance signal. Both gates see the SAME label-free
 invariance computed by the REAL `context_removal_invariance` over the SAME opaque
 `answer_fn`. Only the threshold differs; nothing about the baseline is crippled.
@@ -18,7 +18,7 @@ without the docs, and does so consistently *while still agreeing with the docs*)
 On such a corpus a fixed cutoff false-flags that legitimate traffic as "leaks",
 because it has no idea the corpus baseline is high. The auto-calibrated bar rises
 to the corpus's own baseline and only flags queries that are ABNORMALLY invariant
-relative to it -- the genuine parametric leaks.
+relative to it: the genuine parametric leaks.
 
 Everything is SIMULATED and clearly labelled (offline, no network, no LLM, no GPU).
 The multi-token answerer produces GRADED invariance (unlike the near-binary
@@ -39,7 +39,7 @@ from forensics import calibrate_leak_threshold, context_removal_invariance
 SEED = 20260704
 FIXED_CUTOFF = 0.5  # the naive global baseline the wedge is measured against
 
-# hidden ground-truth categories -- the forensics gates NEVER see these.
+# hidden ground-truth categories: the forensics gates NEVER see these.
 LEAK = "leak"          # answers from parametric memory, ignores context -> IS a leak
 LEGIT_CI = "legit_ci"  # legitimately answerable w/o docs, agrees w/ docs -> NOT a leak
 GROUNDED = "grounded"  # context-dependent grounded answer            -> NOT a leak
@@ -57,7 +57,7 @@ class AblationAnswerer:
     """Opaque (to forensics) multi-token simulated RAG stack.
 
     Returns the pre-baked `full` answer when given context and the `empty` answer
-    when context is stripped -- so `context_removal_invariance` measures a genuine
+    when context is stripped, so `context_removal_invariance` measures a genuine
     graded token overlap. The gates read only this string; the category is hidden.
     """
 
@@ -80,8 +80,8 @@ def _leak_clean(rng, qid: str) -> _Spec:
 
 
 def _leak_hard(rng, qid: str) -> _Spec:
-    # a genuinely BORDERLINE leak: short answer that partly incorporates context ->
-    # invariance ~0.67-0.83, deliberately in the overlap zone. Honest hard case.
+    # a genuinely BORDERLINE leak: short answer that partly incorporates context,
+    # giving invariance ~0.67-0.83, a real hard case chosen to land in the overlap zone.
     s = int(rng.integers(4, 6))
     d = int(rng.integers(1, 3))
     toks = tuple(f"{qid}_p{j}" for j in range(s))
@@ -211,7 +211,7 @@ def run_ablation(rng: np.random.Generator | None = None):
     b = build(rng)
     ctx1 = [Passage(id="ctx", text="retrieved context passage", answer_token=None)]
 
-    # SAME invariance signal for both gates -- the REAL forensics mechanism.
+    # SAME invariance signal for both gates: the REAL forensics mechanism.
     invariances = {
         qid: context_removal_invariance(b.answer_fn, Query(id=qid, text=qid), ctx1)
         for qid in b.test_specs

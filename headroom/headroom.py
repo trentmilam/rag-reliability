@@ -1,19 +1,19 @@
-"""Headroom -- a hardware-aware budget governor for agentic RAG.
+"""Headroom: a hardware-aware budget governor for agentic RAG.
 
 A framework consults Headroom BEFORE escalating to another retrieval/reasoning
-hop. Headroom reads GPU telemetry -- VRAM headroom, thermal margin to a
-throttle/abort line, and the measured per-hop latency budget -- and returns
+hop. Headroom reads GPU telemetry: VRAM headroom, thermal margin to a
+throttle/abort line, and the measured per-hop latency budget, and returns
 ALLOW / DEFER / DENY. Unlike token-cost / sufficiency governors (Adaptive-RAG,
 A2RAG, CA-RAG), the gate here is *physical*: measured VRAM, degrees C to the
 abort line, and milliseconds to the deadline.
 
 Everything hardware is SIMULATED deterministically (clearly labelled). The
 `Trajectory` produces a scripted GPU telemetry stream; the governor never sees
-"it's simulated" -- it only sees numbers, exactly as it would from nvidia-smi.
+"it's simulated". It only sees numbers, exactly as it would from nvidia-smi.
 
-The governing mechanism is honest: the decision is derived from the observed
-telemetry plus the *measured* per-hop slope (extrapolated from history). No
-hop index is special-cased; no verdict is hard-coded.
+The decision derives from the observed telemetry plus the *measured* per-hop
+slope (extrapolated from history). No hop index is special-cased; no verdict
+is hard-coded.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ SEED = 0xEAD00
 class Decision(str, Enum):
     ALLOW = "allow"
     DEFER = "defer"  # back off / cool down / evict KV, then retry
-    DENY = "deny"    # do not escalate -- answer with what you have
+    DENY = "deny"    # do not escalate: answer with what you have
 
 
 @dataclass(frozen=True)
@@ -147,7 +147,7 @@ class Headroom:
         """Ask permission to escalate one more hop. Requires >=1 observation."""
         p = self.profile
         if not self._history:
-            # cold: no telemetry yet -- allow the first hop unconditionally.
+            # cold: no telemetry yet, so allow the first hop unconditionally.
             self._record(Decision.ALLOW, "cold-start (no telemetry)",
                          GpuState(0, 0, 0, 0, 0), 0, 0, 0)
             return Decision.ALLOW

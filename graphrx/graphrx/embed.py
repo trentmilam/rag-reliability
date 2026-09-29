@@ -1,7 +1,7 @@
 """A tiny, vendored, pure-python hashing embedder (BLAKE2b hashing trick).
 
 dim=256, L2-normalized, cosine similarity via dot product. No model download,
-no network, fully deterministic. This is the SIMULATED embedding backend -- it
+no network, fully deterministic. This is the SIMULATED embedding backend: it
 stands in for a real sentence embedder so the linter runs offline. It is a bag
 of hashed tokens: it captures lexical overlap (shared entity name / topic words),
 which is exactly the signal the structural checks below rely on.

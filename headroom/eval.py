@@ -1,16 +1,16 @@
-"""RED/GREEN self-test for Headroom -- the hardware-aware RAG budget governor.
+"""RED/GREEN self-test for Headroom: the hardware-aware RAG budget governor.
 
 FIRST MILESTONE: prove the governor gates on *measured hardware headroom*.
 
-  RED   -- On a card-a trajectory that heats toward the 90C abort line and the
-           15000MB VRAM wedge, an UNGOVERNED agentic loop escalates a 3rd hop
-           and physically BREACHES the limit (this is the real fault). The SAME
-           trajectory GOVERNED by Headroom is stopped BEFORE the breach -- the
-           decision comes from the real mechanism (measured slope extrapolation
-           over telemetry), and the logged reason cites the predicted telemetry.
+  RED:   On a card-a trajectory that heats toward the 90C abort line and the
+         15000MB VRAM wedge, an UNGOVERNED agentic loop escalates a 3rd hop
+         and physically BREACHES the limit (this is the real fault). The SAME
+         trajectory GOVERNED by Headroom is stopped BEFORE the breach: the
+         decision comes from the real mechanism (measured slope extrapolation
+         over telemetry), and the logged reason cites the predicted telemetry.
 
-  GREEN  -- On an ample-headroom trajectory, Headroom allows every hop with zero
-           DENY/DEFER (no false positives) and the loop completes normally.
+  GREEN: On an ample-headroom trajectory, Headroom allows every hop with zero
+         DENY/DEFER (no false positives) and the loop completes normally.
 
 Determinism: numpy.random.default_rng(SEED); no wall-clock, no random.
 exit 0 iff both RED and GREEN pass. No hard-coded verdicts.
@@ -26,7 +26,7 @@ from loop import run_loop
 
 # ---- SIMULATED telemetry schedules (post-hop: vram_mb, temp_c, hop_ms) -------
 # card-a climbing toward the wall. Thermal + VRAM both accelerate; hop 3
-# crosses 90C AND the 15000MB ceiling. (Clearly simulated -- see README.)
+# crosses 90C AND the 15000MB ceiling. (Clearly simulated; see README.)
 NEAR_CEILING = [
     (11472.0, 82.0, 800.0),   # hop 1
     (13072.0, 86.0, 850.0),   # hop 2
@@ -45,8 +45,8 @@ AMPLE = [
 # A skeptic dismisses "governed vs ungoverned" as a strawman. The real proof is
 # vs a REASONABLE incumbent: a token-cost / sufficiency governor of the
 # Adaptive-RAG / CA-RAG family (see baselines.CostGovernor). Every DANGEROUS
-# trajectory below wedges the card at hop 3-4; a competent cost governor -- whose
-# token budget and sufficiency signal are NOWHERE near binding at that point --
+# trajectory below wedges the card at hop 3-4; a competent cost governor, whose
+# token budget and sufficiency signal are NOWHERE near binding at that point,
 # sails straight into the wall, because it is blind to VRAM/thermal physics.
 
 # vram breaches first, temperature stays moderate.
@@ -92,16 +92,16 @@ SAFE = {
 }
 
 # A long, perfectly SAFE climb-free schedule: the card never gets near a limit,
-# so Headroom allows every hop -- but the incumbent's TOKEN BUDGET legitimately
+# so Headroom allows every hop, but the incumbent's TOKEN BUDGET legitimately
 # binds first. Proves the incumbent is a real, working governor (not a no-op).
 # Fast, cool, low-VRAM hops: safe on ALL of Headroom's signals (vram, thermal,
-# AND latency -- 25 x 200ms = 5000ms < the 6000ms deadline) so Headroom allows
+# AND latency: 25 x 200ms = 5000ms < the 6000ms deadline) so Headroom allows
 # every hop, while the incumbent's token budget binds around hop 19.
 LONG_AMPLE = [(5472.0 + i * 4.0, 67.0, 200.0) for i in range(25)]
 
 
 # A baseline (hop 0) sample that already breaches the thermal static guard, so
-# the governor DENYs on the very first gate() call -- before any hop executes.
+# the governor DENYs on the very first gate() call, before any hop executes.
 HOP1_DENY = [(12472.0, 97.0, 700.0)]
 
 
@@ -112,7 +112,7 @@ def _p(msg):
 def red() -> bool:
     _p("=== RED: card-a climbing to the abort line ===")
 
-    # 1) UNGOVERNED baseline -- must actually breach (proves the fault is real).
+    # 1) UNGOVERNED baseline: must actually breach (proves the fault is real).
     ung = run_loop(Trajectory(NEAR_CEILING), CARD_A, governor=None)
     _p(f"  ungoverned: hops={ung.hops_executed} breached={ung.breached} "
        f"peak_temp={ung.peak_temp_c:.1f}C peak_vram={ung.peak_vram_mb:.0f}MB "
@@ -122,7 +122,7 @@ def red() -> bool:
         _p("  FAIL: ungoverned loop did not breach -- fault not reproduced.")
         return False
 
-    # 2) GOVERNED -- same trajectory, Headroom must stop it BEFORE the breach.
+    # 2) GOVERNED: same trajectory, Headroom must stop it BEFORE the breach.
     gov = Headroom(CARD_A)
     grn = run_loop(Trajectory(NEAR_CEILING), CARD_A, governor=gov)
     _p(f"  governed:   hops={grn.hops_executed} breached={grn.breached} "
@@ -217,7 +217,7 @@ def hop1_deny() -> bool:
 def _new_incumbent(*, sufficient_after=None):
     """A FRESH incumbent with the SAME fixed config for every scenario.
 
-    Fair-baseline discipline: one configuration across the whole set -- only the
+    Fair-baseline discipline: one configuration across the whole set. Only the
     scenario (trajectory + query difficulty) changes. Config is defensible, not
     tuned to lose: TOKEN_BUDGET is a common context window and TOKENS_PER_HOP is
     DERIVED from the real corpus (see baselines.py). `sufficient_after` is a
@@ -233,7 +233,7 @@ def _fairness_gate() -> bool:
     """PROVE the incumbent is a real governor, not a rigged no-op.
 
     If the comparator never stops, the whole A/B is a strawman. So first show it
-    DOES stop -- for its OWN legitimate reasons -- when those signals bind.
+    DOES stop, for its OWN legitimate reasons, when those signals bind.
     """
     _p("\n=== FAIR-BASELINE CHECK: the incumbent is a working governor ===")
     ok = True
@@ -325,7 +325,7 @@ def head_to_head() -> bool:
     _p(f"    Headroom (hardware-physics)    breach rate: {hr_breaches}/{n} = {hr_rate:.0%}")
     _p(f"    MEASURED GAP (breaches prevented): {gap:.0%}")
 
-    # ASSERT the gap -- the honest bar: incumbent must FAIL where Headroom holds.
+    # ASSERT the gap: the bar is that incumbent must FAIL where Headroom holds.
     ok = True
     if inc_breaches != n:
         _p("  FAIL: incumbent did not breach on every dangerous scenario "

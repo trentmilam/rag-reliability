@@ -1,6 +1,6 @@
 """FAIR incumbent baseline: a commodity text-quality / gibberish filter.
 
-This is the honest comparator for the A/B in eval.py. It is NOT a strawman --
+This is the real comparator for the A/B in eval.py. It is NOT a strawman:
 it is a reasonable, competent implementation of exactly what the cited prior art
 (CCNet/datatrove perplexity filtering, Gopher/C4 quality heuristics, langid-style
 gibberish detection) actually does to decide whether an extracted chunk is
@@ -8,7 +8,7 @@ low-quality and should be dropped before indexing:
 
   1. Character-trigram perplexity vs a clean-English reference model
      (the CCNet/datatrove approach). The reference model is trained on the CLEAN
-     half of the corpus -- the most FAVORABLE setup for the incumbent, so clean
+     half of the corpus, the most FAVORABLE setup for the incumbent, so clean
      text scores lowest and anomalous text has the best chance to stand out.
 
   2. Gopher/C4-style quality heuristics: symbol-to-word ratio, fraction of
@@ -17,12 +17,12 @@ low-quality and should be dropped before indexing:
 The threshold for each check is CALIBRATED on the clean chunks so the incumbent
 keeps all clean content (no cheap false-positive rejection), then it flags
 anything that trips a check. A chunk is quarantined if perplexity OR any
-heuristic trips. This is deliberately generous to the incumbent.
+heuristic trips. This is intentionally generous to the incumbent.
 
-The point of the A/B is not that this filter is bad -- it is good at its job
+The point of the A/B is not that this filter is bad: it is good at its job
 (mojibake, gibberish, non-language, junk characters). It simply CANNOT SEE
 structural corruption: interleaved columns and delimiter-collapsed tables are,
-character-for-character and word-for-word, fluent English -- so a quality/
+character-for-character and word-for-word, fluent English, so a quality/
 gibberish filter passes them. That is the underserved wedge Legigate owns.
 """
 import math
@@ -52,7 +52,7 @@ class CharLM:
     def _prep(text):
         # normalize whitespace so the model sees the same char stream regardless
         # of how many spaces separated tokens (a real char-LM is not fooled by
-        # single- vs multi-space -- which is exactly why it misses collapsed
+        # single- vs multi-space, which is exactly why it misses collapsed
         # tables). Lowercased letters/digits/space only.
         t = re.sub(r"\s+", " ", text.lower()).strip()
         return "  " + t + " "  # pad start context

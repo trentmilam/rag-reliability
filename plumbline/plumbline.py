@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Plumbline -- deterministic chunk->source provenance gate.
+"""Plumbline: deterministic chunk->source provenance gate.
 
 The wedge (narrow claim):
   Prove, at INDEX time and with a DETERMINISTIC mechanism, that a stored chunk's
   text traces back to a span in its source document under whitespace/OCR/
-  normalization-aware FUZZY alignment -- then, across a reindex, diff the resolved
+  normalization-aware FUZZY alignment. Then, across a reindex, diff the resolved
   provenance to report exactly which citations LOST coverage and where the survivors
   DRIFTED.
 
@@ -19,11 +19,11 @@ Why this is not the same as existing provenance validators:
 
 Everything here is CPU-only, stdlib + numpy, offline, and seed-deterministic.
 
-Ambiguity policy (honest limitation, see README "Honest scope / limitations"):
+Ambiguity policy (a real limitation, see README "Limitations"):
   a quote that occurs MORE THAN ONCE in the (canonical) source cannot be resolved
   to a single span without more context than a substring match has. Rather than
-  silently returning the first occurrence -- which can be the WRONG one and mask
-  real drift, or blame the wrong occurrence -- resolve()/naive_resolve() return
+  silently returning the first occurrence, which can be the WRONG one and mask
+  real drift, or blame the wrong occurrence, resolve()/naive_resolve() return
   the AMBIGUOUS sentinel so the caller can see the citation was not (and cannot
   be, by this mechanism) safely resolved.
 
@@ -52,7 +52,7 @@ AMBIGUOUS = "AMBIGUOUS"
 # --- canonicalization tables -------------------------------------------------
 # One-to-one OCR confusion classes: each variant folds to a single canonical rep.
 # Kept intentionally small and one-directional so the canonical<->source index map
-# stays exact. (Digits map to letters -- a defined tradeoff for OCR text; noted in
+# stays exact. (Digits map to letters: a defined tradeoff for OCR text; noted in
 # the README. Extend via config, not by hand-editing derived output.)
 _CONFUSION = {
     "0": "o",
@@ -138,7 +138,7 @@ def resolve(source: str, quoted_text: str) -> Optional[object]:
 def naive_resolve(source: str, quoted_text: str) -> Optional[object]:
     """Exact-substring baseline (what a hash/exact-match provenance check does).
 
-    Fails -- FALSE-NEGATIVE -- whenever the stored chunk was OCR/whitespace-
+    Fails (FALSE-NEGATIVE) whenever the stored chunk was OCR/whitespace-
     normalized relative to the source, even though the chunk is legitimate.
     Also returns AMBIGUOUS on a repeated exact match, for the same reason
     `resolve` does (see the module docstring's "Ambiguity policy").
@@ -169,17 +169,17 @@ def coverage_diff(
     """Cross-reindex coverage-loss diff.
 
     Compares two provenance manifests keyed by citation id:
-      * LOST      -- resolved before, no longer resolves (coverage gone).
-      * DRIFTED   -- still resolves but to a different source span (moved); reports
-                     from/to spans and the byte delta of the start offset.
-      * STABLE    -- resolves to the same span.
-      * GAINED    -- unresolved in the baseline, now resolves (coverage newly
-                     acquired). Reported separately rather than folded into
-                     STABLE, which would misleadingly imply no change.
-      * AMBIGUOUS -- either side resolved to more than one candidate span
-                     (see AMBIGUOUS); no LOST/DRIFTED/STABLE/GAINED verdict can
-                     be made honestly, so the citation is reported separately
-                     instead of being silently folded into one of the above.
+      * LOST:      resolved before, no longer resolves (coverage gone).
+      * DRIFTED:   still resolves but to a different source span (moved); reports
+                   from/to spans and the byte delta of the start offset.
+      * STABLE:    resolves to the same span.
+      * GAINED:    unresolved in the baseline, now resolves (coverage newly
+                   acquired). Reported separately rather than folded into
+                   STABLE, which would misleadingly imply no change.
+      * AMBIGUOUS: either side resolved to more than one candidate span
+                   (see AMBIGUOUS); no LOST/DRIFTED/STABLE/GAINED verdict can
+                   be made correctly, so the citation is reported separately
+                   instead of being silently folded into one of the above.
     """
     lost: List[str] = []
     drifted: List[Dict[str, object]] = []
@@ -200,7 +200,7 @@ def coverage_diff(
             stable.append(cid)
         elif o is None and n is not None:  # newly resolved vs. the baseline
             gained.append(cid)
-        else:  # o is None and n is None -- unresolved on both sides
+        else:  # o is None and n is None: unresolved on both sides
             stable.append(cid)
     return {"lost": lost, "drifted": drifted, "stable": stable, "gained": gained,
             "ambiguous": ambiguous}

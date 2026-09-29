@@ -9,10 +9,10 @@ flawed graph is the clean graph plus two PLANTED, labeled defects:
      communities (traversal fan-out into unrelated evidence);
   2. an OVER-MERGED community: aviation + sports entities relabeled into one
      community (a "global" community summary would conflate two topics);
-  plus one ORPHAN node (a recall problem, deliberately LOW poisoning risk).
+  plus one ORPHAN node (a recall problem, not a poisoning one, so it scores LOW).
 
-Facts are built from the entity name + its topical VOCABULARY only -- the literal
-ground-truth community label (the topic key) is deliberately NOT written into any
+Facts are built from the entity name + its topical VOCABULARY only. The literal
+ground-truth community label (the topic key) is never written into any
 fact text, so the hashing embedder recovers topic/entity structure from context
 alone, never from a leaked label. Ground-truth labels live on each fact for the
 probe only.
@@ -82,7 +82,7 @@ def build_clean_graph(seed):
     for topic, members in by_topic.items():
         edges.extend(_triangle_edges(members))
     # one thin bridge to keep the whole graph connected (finance<->biology,
-    # biology<->aviation, aviation<->sports) -- these are legitimate, not hubs.
+    # biology<->aviation, aviation<->sports): these are legitimate, not hubs.
     edges.append(("gammafund", "helixgen"))
     edges.append(("genoworks", "aerodyne"))
     edges.append(("altiplane", "proleague"))

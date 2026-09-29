@@ -11,8 +11,8 @@ A GraphRAG-style entity graph, deterministic in-memory:
     }
 
 `real_entity` / `real_community` are the hidden answer key: the linter's detectors
-NEVER read them (they are unsupervised/structural). Only the poisoning probe --
-the evaluation instrument -- reads them, exactly like a labeled test set.
+NEVER read them (they are unsupervised/structural). Only the poisoning probe,
+the evaluation instrument, reads them, exactly like a labeled test set.
 """
 import copy
 from collections import defaultdict, deque

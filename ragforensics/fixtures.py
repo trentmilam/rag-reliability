@@ -102,24 +102,24 @@ def build(rng: np.random.Generator, *, leaky_calib: int = 0,
         calib_contexts[qid] = retriever.retrieve(q.text, k=4)
 
     # --- test topics (held OUT of calibration) ---
-    # grounded (green): topic 'oskander' -- no parametric, faithful
+    # grounded (green): topic 'oskander', no parametric, faithful
     g_id, g_phrase, g_ans, _ = _TOPICS[6]
     grounded_query = Query(id=g_id, text=_qtext(g_id))
     grounded_ctx = retriever.retrieve(grounded_query.text, k=4)
 
-    # leak (red): topic 'pellucid' -- model KNOWS a different answer, ignores docs
+    # leak (red): topic 'pellucid', model KNOWS a different answer, ignores docs
     l_id, l_phrase, l_ans, l_decoy = _TOPICS[7]
     if inject_leak:
         parametric[l_id] = (l_decoy, 0.95)  # leaks the decoy, disagreeing with docs
     leak_query = Query(id=l_id, text=_qtext(l_id))
     leak_ctx = retriever.retrieve(leak_query.text, k=4)
 
-    # retriever fault (red): topic 'nimbus' -- relevant passage EXCLUDED from index
+    # retriever fault (red): topic 'nimbus', relevant passage EXCLUDED from index
     r_id, r_phrase, r_ans, _ = _TOPICS[8]
     retriever_query = Query(id=r_id, text=_qtext(r_id))
     retriever_ctx = retriever.retrieve(retriever_query.text, k=4, exclude={f"p_{r_id}"})
 
-    # generator fault (red): topic 'cindral' -- good context, unfaithful generation
+    # generator fault (red): topic 'cindral', good context, unfaithful generation
     gen_id, gen_phrase, gen_ans, gen_decoy = _TOPICS[9]
     if inject_halluc:
         hallucinate[gen_id] = "phantomtok"  # token not present in the context

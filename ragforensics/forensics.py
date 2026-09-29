@@ -1,16 +1,16 @@
-"""RAGForensics -- label-free retriever-vs-generator attribution + parametric-leak gate.
+"""RAGForensics: label-free retriever-vs-generator attribution + parametric-leak gate.
 
-Honest scope: the individual mechanisms here are COMMODITY. Answer
+Scope: the individual mechanisms here are COMMODITY. Answer
 invariance under context removal, self-consistency resampling, and answer-in-context
 support checks all appear in the literature (see README: ContextCite, ReDeEP /
 arXiv 2510.12668, RAGChecker/RAG-E). RAGForensics does NOT reimplement any of them.
 What it packages is a narrow wedge:
 
-  * LABEL-FREE end to end -- no gold answers, no relevance judgments. Every signal
+  * LABEL-FREE end to end: no gold answers, no relevance judgments. Every signal
     is computed from the model's own behavior under intervention and from the
     retrieved context, never against a held-out answer key.
   * an AUTO-CALIBRATED, corpus-specific leak threshold (`calibrate_leak_threshold`)
-    tuned from held-out queries, instead of a magic global constant -- so the gate
+    tuned from held-out queries, instead of a magic global constant, so the gate
     adapts to a corpus's baseline context-independence. This is the one net-new bit.
   * shipped as a CI gate you can run offline / local-first.
 
@@ -118,7 +118,7 @@ def calibrate_leak_threshold(answer_fn, calib_queries: list[Query],
                              contexts: dict[str, list[Passage]],
                              *, margin: float = 0.15,
                              floor: float = 0.35, ceil: float = 0.95) -> LeakCalibration:
-    """Tune the leak threshold from held-out queries -- NO labels.
+    """Tune the leak threshold from held-out queries. NO labels.
 
     Assumes the held-out set is representative of the corpus's *normal* operating
     behavior (a reference grounded-ish traffic). We take the 90th percentile of
@@ -155,7 +155,7 @@ def attribute(retr_quality: float, supported: bool, *, retr_floor: float) -> str
     """Label-free retriever-vs-generator attribution.
 
     Retriever fault : nothing topically relevant was fetched (rq below the
-                      corpus-derived floor) -> the generator never had a chance.
+                      corpus-derived floor), so the generator never had a chance.
     Generator fault : good context was fetched but the answer is not supported by
                       it (unfaithful / hallucinated).
     ok              : relevant context fetched and answer grounded in it."""

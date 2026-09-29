@@ -13,19 +13,19 @@ recall + false-positive rate for BOTH resolvers on the SAME corpus.
 
 Fairness of the baseline
 ------------------------
-The comparator is `naive_resolve` — exact-substring lookup, i.e. exactly what a
+The comparator is `naive_resolve`: exact-substring lookup, i.e. exactly what a
 content-hash / exact-match provenance check does. That is the reasonable incumbent
 a competent engineer ships, not a crippled strawman: it is given the FULL, correct
 source and the FULL citation text, and it succeeds on every clean (un-degraded)
 citation (measured below). It only loses where the stored chunk was legitimately
-OCR/whitespace-normalized relative to the source — which is the wedge.
+OCR/whitespace-normalized relative to the source, which is the wedge.
 
-Honesty
--------
+Known weaknesses
+----------------
 This benchmark does NOT flatter Plumbline. It MEASURES and REPORTS two things the
 tool does badly, and asserts them so they can't silently regress into a rosy claim:
   * Plumbline recall on UNMODELED OCR noise is < 1.0 (it is not a magic aligner;
-    the fixture is not tautologically winnable — cf. eval.py which only uses
+    the fixture is not tautologically winnable; cf. eval.py which only uses
     reversible transforms).
   * Plumbline manufactures FALSE provenance for short numeric citations because
     the OCR confusion table folds digits to letters (0->o, 1->l, 5->s): "100"
@@ -54,8 +54,8 @@ SEED = 20260704
 N_CHUNKS = 1000  # present (legitimate) citations
 
 # --- corpus vocabulary -------------------------------------------------------
-# Deliberately includes "collision-bait" prose tokens (look-through, balloon,
-# rollover) so the digit-fold precision hole can be MEASURED, not just asserted.
+# Includes "collision-bait" prose tokens (look-through, balloon, rollover) so
+# the digit-fold precision hole can be MEASURED, not just asserted.
 _SUBJECTS = [
     "The board", "The audit committee", "Management", "The finance team",
     "The risk committee", "The treasury desk", "The investment committee",
@@ -239,7 +239,7 @@ def main() -> int:
 
     # ===================== MEASURED ASSERTIONS ==============================
     # 1) THE WEDGE: on legitimately OCR-normalized chunks, Plumbline resolves
-    #    (near-)all, naive false-fails on (near-)all -> large measured gap.
+    #    (near-)all, while naive false-fails on (near-)all, a large measured gap.
     if r_mod_p < 0.99:
         _fail(f"Plumbline recall on modeled OCR too low: {r_mod_p:.3f}")
     if r_mod_n > 0.05:
@@ -247,7 +247,7 @@ def main() -> int:
     if (r_mod_p - r_mod_n) < 0.90:
         _fail(f"recall gap on modeled OCR too small: {r_mod_p - r_mod_n:.3f}")
 
-    # 2) FAIR BASELINE: naive is NOT crippled — it resolves EVERY clean citation.
+    # 2) FAIR BASELINE: naive is NOT crippled. It resolves EVERY clean citation.
     if r_cln_n < 0.999:
         _fail(f"baseline unfair: naive missed clean citations (recall {r_cln_n:.3f})")
     if r_cln_p < 0.999:
@@ -257,11 +257,11 @@ def main() -> int:
     if (r_all_p - r_all_n) < 0.45:
         _fail(f"overall recall gain too small: {r_all_p - r_all_n:.3f}")
 
-    # 4) HONESTY — not tautological: Plumbline does NOT solve unmodeled OCR noise.
+    # 4) NOT TAUTOLOGICAL: Plumbline does NOT solve unmodeled OCR noise.
     if r_unm_p >= 1.0:
         _fail("Plumbline recall on unmodeled OCR == 1.0 -> fixture is tautological")
 
-    # 5) HONESTY — measured precision hole: digit-fold manufactures false
+    # 5) MEASURED precision hole: digit-fold manufactures false
     #    provenance for Plumbline; the naive baseline does not.
     if fp_num_p <= 0.0:
         _fail("expected Plumbline digit-fold false positives were not observed")

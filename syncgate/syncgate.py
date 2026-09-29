@@ -1,4 +1,4 @@
-"""SyncGate -- incremental-sync correctness + cross-document reference integrity.
+"""SyncGate: incremental-sync correctness + cross-document reference integrity.
 
 The problem: a RAG ingestion pipeline maintains a `state.json`-shaped watermark
 (``{relative_file_path: content_sha256}``) across runs so a repeat ingest only
@@ -7,34 +7,35 @@ project's `ingest/state.py`: `load_state`/`save_state`/`changed_files`). Two
 things silently rot around that watermark and are otherwise invisible until
 retrieval quality craters:
 
-  1. the incremental diff itself can be wrong (reprocess too much -> wasted
-     work; reprocess too little -> stale content served as current);
+  1. the incremental diff itself can be wrong (reprocessing too much wastes
+     work; reprocessing too little serves stale content as current);
   2. a document can reference another entity by ID (an RFC's `Obsoletes: RFC
      NNNN`, an erratum's "corrects RFC NNNN") whose target has since vanished
-     from the corpus -- renamed, withdrawn, or never existed -- and nothing
+     from the corpus (renamed, withdrawn, or never existed), and nothing
      flags the broken pointer until a reader hits it.
 
 SyncGate covers three DISTINCT, precisely-named concepts, each its own
 function so they cannot be silently conflated:
 
-  * INCREMENTAL SYNC (`changed_files` / `plan_sync`) -- label-free, self-
-    referential: the hash comparison against the prior watermark IS the
+  * INCREMENTAL SYNC (`changed_files` / `plan_sync`): label-free, self-
+    referential. The hash comparison against the prior watermark IS the
     ground truth of what changed. No external "what should have changed"
     oracle is needed.
-  * REFERENCE CLOSURE (`reference_closure`) -- the strict, cache-blind
-    definition: every reference a live document makes must resolve to a
+  * REFERENCE CLOSURE (`reference_closure`): the strict, cache-blind
+    definition. Every reference a live document makes must resolve to a
     target itself present in the current live entity set, full stop. This is
     also exactly what a naive `dict.get(ref) is None` check computes.
-  * REFERENCE FALLBACK (`resolve_reference` / `resolve_references`) -- a
-    three-way outcome that closure alone cannot express: LIVE (target is
+  * REFERENCE FALLBACK (`resolve_reference` / `resolve_references`): a
+    three-way outcome that closure alone cannot express. LIVE (target is
     live), STALE_CACHED (target isn't live but a last-known-good snapshot
-    exists -- serve it with an explicit staleness flag), or DANGLING (no live
-    target and no cached snapshot -- hard-fail, never fabricate a target).
+    exists, so it is served with an explicit staleness flag), or DANGLING (no
+    live target and no cached snapshot, a hard fail that never fabricates a
+    target).
 
 This is NOT ChunkLedger's job (see `chunkledger/chunkledger.py`): ChunkLedger
 proves nothing was dropped *within* one document's own chunking, self-
 referentially, at chunk-boundary granularity. SyncGate audits the corpus-wide
-bookkeeping *across* documents and *across* runs -- which files need
+bookkeeping *across* documents and *across* runs: which files need
 reprocessing, and whether cross-document pointers still resolve.
 
 Deterministic, offline, stdlib only (no numpy needed: this is dict/set
@@ -70,8 +71,8 @@ class SyncPlan:
     @property
     def reduction_factor(self) -> float:
         """How many times fewer files this plan reprocesses vs. reprocessing
-        everything every run (the naive incumbent). `inf` when nothing changed
-        -- the everyday case for an incremental sync, not a hypothetical."""
+        everything every run (the naive incumbent). `inf` when nothing changed,
+        the everyday case for an incremental sync, not a hypothetical."""
         if not self.changed:
             return float("inf")
         return self.total / len(self.changed)
@@ -122,8 +123,8 @@ class RefResolution:
 
 def reference_closure(edges: list[RefEdge], live_entities: set[str]) -> list[RefEdge]:
     """Strict, cache-blind closure check: edges whose target is NOT in the
-    current live entity set. This is the classic naive-adjacent definition --
-    it is exactly what a `dict.get(ref) is None` presence check computes -- and
+    current live entity set. This is the classic naive-adjacent definition:
+    it is exactly what a `dict.get(ref) is None` presence check computes, and
     on its own cannot distinguish a target that was renamed (recoverable from
     a cached snapshot) from one that never existed (a hard failure). Use
     `resolve_references` for that distinction.
@@ -138,13 +139,13 @@ def resolve_reference(
 ) -> RefResolution:
     """Three-way fallback classification for one reference edge.
 
-    LIVE           -- target is present in the current live entity set.
-    STALE_CACHED   -- target isn't live, but a last-known-good snapshot exists
-                       (e.g. the target was renamed/superseded); serve it, but
-                       the caller MUST surface the staleness, never pass it off
-                       as current.
-    DANGLING       -- no live target and no cached snapshot. Never fabricate a
-                       target that doesn't exist: hard-fail instead.
+    LIVE:           target is present in the current live entity set.
+    STALE_CACHED:   target isn't live, but a last-known-good snapshot exists
+                     (e.g. the target was renamed/superseded); serve it, but
+                     the caller MUST surface the staleness, never pass it off
+                     as current.
+    DANGLING:       no live target and no cached snapshot. Never fabricate a
+                     target that doesn't exist: hard-fail instead.
     """
     if edge.to_id in live_entities:
         return RefResolution(edge, RefStatus.LIVE, "target present in the current live set")
@@ -188,7 +189,7 @@ class SyncGateResult:
     @property
     def passed(self) -> bool:
         """Gate policy: DANGLING references fail the gate. STALE_CACHED does
-        not -- it is a legitimate, explicitly-flagged degraded-serve outcome,
+        not: it is a legitimate, explicitly-flagged degraded-serve outcome,
         not a defect."""
         return not self.dangling
 

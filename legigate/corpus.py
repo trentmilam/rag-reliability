@@ -2,11 +2,11 @@
 
 Every corrupted chunk is DERIVED from a clean one by the same real, mechanical
 fault transforms used in fixtures.py (interleave two columns; flatten table
-delimiters). Nothing is hand-labeled as "bad" -- the label follows from the
+delimiters). Nothing is hand-labeled as "bad": the label follows from the
 transform, and the gate must recover it from the text alone.
 
-The corpus deliberately includes these HARD / honest cases:
-  * same-topic interleave (columns share vocabulary -> the order margin is
+The corpus includes these HARD cases:
+  * same-topic interleave (columns share vocabulary, so the order margin is
     much smaller than the topically-distinct case),
   * uniform / boilerplate legal prose (a false-positive risk for the order
     signal, ironic given the 'legi-' name),
@@ -138,7 +138,7 @@ def _interleave(a, b):
 
 
 def _collapse(table_lines):
-    """Flatten every 2+ space run to a single space -> cell structure lost."""
+    """Flatten every 2+ space run to a single space, so cell structure is lost."""
     return "\n".join(re.sub(r" {2,}", " ", ln).strip() for ln in table_lines)
 
 
@@ -159,7 +159,7 @@ def labeled_corpus():
         "clean_revenue2": REVENUE_2,
         "clean_rivers": RIVERS,
         "clean_bread": BREAD,
-        "clean_legal_boilerplate": LEGAL,   # uniform prose = FP risk, on purpose
+        "clean_legal_boilerplate": LEGAL,   # uniform prose, a chosen FP risk
         "clean_coffee": COFFEE,
         "clean_bees": BEES,
     }
@@ -186,7 +186,7 @@ def labeled_corpus():
     items.append(("corrupt_interleave_legal_x_coffee",
                   _interleave(LEGAL, COFFEE), 1))
 
-    # ---- CORRUPTED: same-topic interleave (HARD -- shared vocabulary) ----
+    # ---- CORRUPTED: same-topic interleave (HARD: shared vocabulary) ----
     items.append(("corrupt_interleave_photo_SAME",
                   _interleave(COLUMN_A, PHOTO_2), 1))
     items.append(("corrupt_interleave_revenue_SAME",

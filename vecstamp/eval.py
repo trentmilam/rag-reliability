@@ -2,7 +2,7 @@
 
 Milestone 1 (diagonal smoke test): the failure-typing decision tree correctly
 classifies build->load embedder swaps, validated by a confusion matrix over
-real swaps (no hard-coded verdicts -- every verdict comes from
+real swaps (no hard-coded verdicts: every verdict comes from
 vecstamp.verify() re-embedding for real).
 
   GREEN : identical reload reproduces bit-exactly (verdict "reproduced", ok).
@@ -128,18 +128,18 @@ def _milestone1() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Milestone 2 -- statistically-real sweep + MEASURED baseline A/B
+# Milestone 2: statistically-real sweep + MEASURED baseline A/B
 # ---------------------------------------------------------------------------
 # The fair incumbent: a name+dim fingerprint. Mainstream RAG frameworks persist
 # the embedder *name* and output *dim* and treat "same name, same dim" as
-# "same embedder". This is a REASONABLE thing a competent engineer ships -- it
+# "same embedder". This is a REASONABLE thing a competent engineer ships. It
 # just cannot see anything that leaves name+dim unchanged. We model each fault's
 # DECLARED (name, dim) as what a real deployment would advertise:
 #   * quant copy / lost-norm serving bug / silently-swapped same-named weights
-#     all keep the declared name+dim -> incumbent is BLIND (the realistic
+#     all keep the declared name+dim, so the incumbent is BLIND (the realistic
 #     silent-fault case this tool targets).
-#   * a changed projection dim is visible in metadata -> incumbent CATCHES it
-#     (we give the incumbent the one fault it can legitimately see -- not a
+#   * a changed projection dim is visible in metadata, so the incumbent CATCHES
+#     it (we give the incumbent the one fault it can legitimately see, not a
 #     rigged strawman).
 
 SWEEP_N = 60          # seeds per fault family
@@ -167,22 +167,22 @@ def _sweep_samples():
         yield ("reproduced", "reproduced",
                verify(man, build_embed), REF_NAME, REF_DIM)
 
-        # quantized serving copies at q4/q6/q8 -- same declared name+dim
+        # quantized serving copies at q4/q6/q8, same declared name+dim
         for q in QUANT_LEVELS:
             fn = partial(embed, weights_seed=REF_SEED, dim=REF_DIM,
                          normalize=True, quantize=q)
             yield (f"q{q}", "quant-dtype-drift", verify(man, fn), REF_NAME, REF_DIM)
 
-        # L2-normalization dropped in the serving path -- same declared name+dim
+        # L2-normalization dropped in the serving path, same declared name+dim
         fn = partial(embed, weights_seed=REF_SEED, dim=REF_DIM, normalize=False)
         yield ("lost-l2-norm", "lost-l2-norm", verify(man, fn), REF_NAME, REF_DIM)
 
-        # silently swapped weights (reverted/corrupted checkpoint) -- SAME name
+        # silently swapped weights (reverted/corrupted checkpoint), SAME name
         alt = REF_SEED ^ ((0x5A5A5A + s * 2654435761) & 0xFFFFFFFF)
         fn = partial(embed, weights_seed=alt, dim=REF_DIM, normalize=True)
         yield ("wrong-weights", "wrong-weights", verify(man, fn), REF_NAME, REF_DIM)
 
-        # changed projection dim -- metadata dim differs (incumbent can see it)
+        # changed projection dim, metadata dim differs (incumbent can see it)
         dim = (128, 192, 320)[s % 3]
         fn = partial(embed, weights_seed=REF_SEED, dim=dim, normalize=True)
         yield ("dim-mismatch", "dim-mismatch", verify(man, fn), REF_NAME, dim)
@@ -295,7 +295,7 @@ def _milestone2() -> bool:
     print(f"  fault families incumbent is BLIND to : {inc_blind_fams}/"
           f"{len(real_faults)}")
 
-    # ---- honest limitation: aggressive q4 perturbs the norm past NORM_TOL ----
+    # ---- known limitation: aggressive q4 perturbs the norm past NORM_TOL ----
     print(f"\n[honest] q4 (4-bit) drift is DETECTED but typed 'lost-l2-norm' in "
           f"{int(confusion[idx['quant-dtype-drift']][idx['lost-l2-norm']])}/"
           f"{fam_total['q4']} cases:")

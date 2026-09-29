@@ -3,7 +3,7 @@
 Milestone: prove the orphan/thin/adequate bucketing is driven by the real
 per-type corroboration mechanism (not a hard-coded verdict), prove
 `coverage_drift` trips on a genuine adequate->thin regression, and run the
-head-to-head against a naive keyword-frequency audit -- constructing the
+head-to-head against a naive keyword-frequency audit, constructing the
 EXACT fixture case where raw mention counts are fooled: an entity mentioned
 only within its own authoritative record (self-references, running headers,
 table-of-contents entries) racks up a high raw count while corroborating
@@ -11,11 +11,11 @@ from zero independent sources.
 
 Scenario (obviously-fictional IDs; the "RFCX" prefix does not collide with
 any real IETF numbering):
-  * RFCX4001 -- broadly corroborated across all 3 other source types -> adequate.
-  * RFCX4002 -- corroborated by only 1 of 3 other types -> thin.
-  * RFCX4003 -- mentioned only in its own body, and rarely -> orphan (the
+  * RFCX4001: broadly corroborated across all 3 other source types -> adequate.
+  * RFCX4002: corroborated by only 1 of 3 other types -> thin.
+  * RFCX4003: mentioned only in its own body, and rarely -> orphan (the
     "nobody ever talked about it" case).
-  * RFCX4004 -- mentioned 50 TIMES, but every single mention is inside its own
+  * RFCX4004: mentioned 50 TIMES, but every single mention is inside its own
     `rfc_body` record -> orphan under CovGate (zero independent corroboration),
     while a naive raw-count audit reads 50 mentions and calls it well covered.
 
@@ -39,8 +39,8 @@ def _fail(msg: str) -> None:
 
 REGISTRY = ["RFCX4001", "RFCX4002", "RFCX4003", "RFCX4004"]
 
-# --- current run: engineered so each bucket -- and the self-referential trap
-# -- is unambiguous. ----------------------------------------------------------
+# --- current run: engineered so each bucket, and the self-referential trap,
+# is unambiguous. ----------------------------------------------------------
 MENTIONS_CUR = [
     # RFCX4001: broad, genuine cross-source corroboration -> adequate.
     Mention("RFCX4001", "rfc_body", "own defining record"),
@@ -56,7 +56,7 @@ MENTIONS_CUR = [
     Mention("RFCX4002", "errata", "erratum 3 references RFCX4002"),
     # RFCX4003: only ever mentioned in its own body, and only once -> orphan.
     Mention("RFCX4003", "rfc_body", "own defining record"),
-    # RFCX4004: the trap -- 50 mentions, ALL self-referential (own body only).
+    # RFCX4004: the trap: 50 mentions, ALL self-referential (own body only).
     *[Mention("RFCX4004", "rfc_body", f"self-reference #{i}") for i in range(50)],
 ]
 
@@ -77,7 +77,7 @@ def naive_keyword_frequency_audit(
 ) -> tuple[int, bool]:
     """Incumbent: total RAW mention count across ALL sources, thresholded.
 
-    This is the standard 'grep count' style audit -- count every occurrence of
+    This is the standard 'grep count' style audit: count every occurrence of
     the entity anywhere in the corpus, call it covered if there are 'enough'.
     It is a FAIR, reasonable metric, not a strawman: on a genuinely
     well-corroborated entity (RFCX4001) and on a genuinely under-discussed one
@@ -141,7 +141,7 @@ def main() -> int:
     print("\n=== HEAD-TO-HEAD: naive keyword-frequency audit vs CovGate ===")
 
     # Fairness anchors: on a genuinely well-corroborated entity AND a genuinely
-    # under-discussed one, the naive count and CovGate AGREE -- so the trap
+    # under-discussed one, the naive count and CovGate AGREE, so the trap
     # below is a true disagreement on a real blind spot, not a rigged strawman.
     n1_count, n1_ok = naive_keyword_frequency_audit("RFCX4001", MENTIONS_CUR)
     n3_count, n3_ok = naive_keyword_frequency_audit("RFCX4003", MENTIONS_CUR)
@@ -154,7 +154,7 @@ def main() -> int:
     print("  -> both metrics AGREE on these two: the naive audit is not a strawman")
 
     # The trap: RFCX4004 is mentioned 50 times, but every mention is
-    # self-referential (own `rfc_body` only) -- zero independent corroboration.
+    # self-referential (own `rfc_body` only): zero independent corroboration.
     n4_count, n4_ok = naive_keyword_frequency_audit("RFCX4004", MENTIONS_CUR)
     rec4 = gate.records["RFCX4004"]
     print(

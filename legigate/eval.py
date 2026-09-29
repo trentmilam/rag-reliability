@@ -1,12 +1,12 @@
-"""Legigate eval -- RED/GREEN self-test of the FIRST MILESTONE.
+"""Legigate eval: RED/GREEN self-test of the FIRST MILESTONE.
 
     python legigate/eval.py
 
 GREEN: clean single-column prose + a well-formed table both PASS the gate.
-RED:   the same content after real fault injection -- two-column interleave
-       and a delimiter-collapsed table -- are both QUARANTINED, each by the
-       real mechanism (reading-order margin inversion / table structure loss),
-       not by any hard-coded verdict.
+RED:   the same content after real fault injection (two-column interleave
+       and a delimiter-collapsed table) is QUARANTINED in both cases, each by
+       the real mechanism (reading-order margin inversion / table structure
+       loss), not by any hard-coded verdict.
 
 Also asserts determinism: scoring is byte-identical across two runs, including
 on a batch of RNG-generated chunks.
@@ -51,8 +51,8 @@ def measure_ab(checks):
     reports precision/recall for BOTH the gate and a competent commodity
     perplexity+heuristics filter. The wedge is proven, not asserted: the
     incumbent is calibrated to keep ALL clean chunks and it still misses the
-    structural corruption (interleave / collapsed tables) that Legigate catches
-    -- while (control) it DOES catch genuine gibberish/mojibake, so it is a real
+    structural corruption (interleave / collapsed tables) that Legigate catches,
+    while (control) it DOES catch genuine gibberish/mojibake, so it is a real
     filter, not a strawman.
     """
     items = labeled_corpus()
@@ -144,7 +144,7 @@ def main() -> int:
         and collapsed.table_score < TABLE_THRESHOLD
     )
 
-    # --- guard against rigging: clean scores are actually ABOVE threshold --
+    # --- guard against rigging: clean scores are actually ABOVE threshold
     checks["green_clean_prose_order_ok"] = (
         clean_prose.order_applicable
         and clean_prose.order_score >= ORDER_THRESHOLD

@@ -5,7 +5,7 @@ forensics eval can run offline and deterministically. It is clearly labelled a
 SIMULATION: there is no learned model here, only a transparent blend rule. The
 point is that the *forensics mechanisms* in `forensics.py` treat this answerer as
 an opaque callable `answer_fn(query_text, passages) -> str` and NEVER peek at its
-internals or at any gold label -- exactly as they would against a real black-box
+internals or at any gold label, exactly as they would against a real black-box
 RAG endpoint. The faults the eval catches are emergent from this blend rule; the
 verdicts are not hard-coded anywhere.
 
@@ -21,7 +21,7 @@ Blend rule (the only "intelligence"):
     else:                                                       emit "IDK"
 
 A *parametric leak* is the first branch firing while good context was available
-and the parametric answer disagrees with the docs -- the model asserts internal
+and the parametric answer disagrees with the docs: the model asserts internal
 memory over the provided evidence. Because emission ignores context in that
 branch, the answer is INVARIANT when context is stripped: that invariance is the
 label-free signal `forensics.py` keys on.
@@ -88,7 +88,7 @@ class SimAnswerer:
 
         # Pure generator fault: WITH relevant context available, emit a token that
         # is NOT supported by it (an unfaithful generation). Without context it
-        # abstains -- so this is context-DEPENDENT (invariance stays low), which is
+        # abstains, so this is context-DEPENDENT (invariance stays low), which is
         # what separates a plain hallucination from a parametric leak.
         if query.id in self.hallucinate:
             return self.hallucinate[query.id] if support >= CTX_FLOOR else IDK

@@ -1,11 +1,11 @@
-"""ReindexGate -- label-free, judge-free retrieval-regression CI gate.
+"""ReindexGate: label-free, judge-free retrieval-regression CI gate.
 
 Given an OLD and a NEW index built over the same corpus, ReindexGate:
 
   1. mines probe queries from the corpus (label-free, known-item convention);
   2. judges relevance with a fixed, SYSTEM-INDEPENDENT pseudo-relevance signal
      (reference hash-embedding similarity of a candidate doc to the query's
-     source doc) -- no human qrels, no LLM judge;
+     source doc), with no human qrels and no LLM judge;
   3. computes a POOLING-BIAS-CORRECTED index-vs-index nDCG delta: relevance is
      judged on the UNION pool of both systems' results (Buttcher-2007 style), so
      a doc found only by NEW is judged fairly instead of assumed non-relevant;
@@ -13,7 +13,7 @@ Given an OLD and a NEW index built over the same corpus, ReindexGate:
   5. FAILS the gate when the CI is separated below zero by a margin (NEW is
      meaningfully worse). Also reports RBO churn as a diagnostic.
 
-Honest scope: this is a COARSE-BUT-ROBUST regression DETECTOR. The relevance
+Scope: this is a COARSE-BUT-ROBUST regression DETECTOR. The relevance
 signal is a heuristic, not truth; a green gate means "no regression this crude
 detector can see," not "NEW is proven better."
 """
@@ -42,8 +42,8 @@ FAIL_MARGIN = 0.01  # NEW must be worse by more than this, CI-separated, to FAIL
 def reference_simmatrix(docs: list[Doc]) -> np.ndarray:
     """Fixed, system-independent doc-vs-doc similarity in the REF_DIM space.
 
-    This is the pseudo-relevance oracle. It is built with REF_ORACLE_SEED -- a
-    hash family DELIBERATELY DISTINCT from the seed OLD and NEW use -- so it is a
+    This is the pseudo-relevance oracle. It is built with REF_ORACLE_SEED, a
+    hash family that is DISTINCT from the seed OLD and NEW use, so it is a
     genuinely third, near-orthogonal signal that depends only on the corpus,
     never on OLD or NEW, and cannot favour either index. It is a deterministic
     heuristic standing in for (absent) qrels.
@@ -155,7 +155,7 @@ def run_gate(
         delta_c[i] = ndcg_new_c - ndcg_old_c
 
         # Biased: judgments built ONLY from the incumbent (OLD) pool. NEW-only
-        # relevant docs are therefore invisible -> penalises NEW unfairly. Kept
+        # relevant docs are therefore invisible, which penalises NEW unfairly. Kept
         # to demonstrate what the pooling-bias correction removes.
         biased_pool = set(old_ranked)
         judged_b = true_rel & biased_pool

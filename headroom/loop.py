@@ -43,7 +43,7 @@ _CORPUS_VEC = embed_batch(_CORPUS)
 
 
 def _retrieve(query: str) -> int:
-    """Toy cosine retrieval -- real mechanism, just to make a hop do work."""
+    """Toy cosine retrieval: real mechanism, just to make a hop do work."""
     q = embed(query)
     sims = _CORPUS_VEC @ q
     return int(np.argmax(sims))

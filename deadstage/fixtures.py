@@ -1,7 +1,7 @@
 """Externally-captured RAG artifacts (deterministic, in-repo fixtures).
 
 These stand in for the artifacts a REAL pipeline emits and that a caller feeds
-to Deadstage through the ``from_artifacts`` ingestion path -- NOT the
+to Deadstage through the ``from_artifacts`` ingestion path, NOT the
 self-consistent artifacts ``build_pipeline`` manufactures from the vendored
 embedder. Each fixture encodes a KNOWN injected root-cause stage plus the
 realistic *downstream symptom(s)* that failure produces in a live pipeline
@@ -12,7 +12,7 @@ Encoding the root cause AND its downstream symptoms is exactly what lets the
 A/B in ``eval.py`` MEASURE root-cause attribution: the whole point of the
 artifact-ingestion path is that ``build_pipeline`` can never emit a state where
 an upstream stage is dead *and* a specific downstream stage carries an
-independent symptom -- it always manufactures a self-consistent state, so the
+independent symptom; it always manufactures a self-consistent state, so the
 retrieve/score invariants were previously unreachable on realistic data.
 
 Deterministic: fixed hashing embedder, no random, no wall-clock.
@@ -51,7 +51,7 @@ def build_fixtures() -> list[tuple[str, object, str | None]]:
     """
     ids = ["d0", "d1", "d2", "d3"]
 
-    # 1) HEALTHY -- every captured stage is live. Control.
+    # 1) HEALTHY: every captured stage is live. Control.
     healthy = from_artifacts(
         docs=_DOCS,
         index_ids=ids,
@@ -108,7 +108,7 @@ def build_fixtures() -> list[tuple[str, object, str | None]]:
     )
 
     # 5) SCORE root: retriever healthy, ranking is degenerate/tied (root = score).
-    #    Single symptom at the LAST stage -- a fairness control where the
+    #    Single symptom at the LAST stage: a fairness control where the
     #    symptom-based baseline SHOULD get the attribution right.
     score_root = from_artifacts(
         docs=_DOCS,

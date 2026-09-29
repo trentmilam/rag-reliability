@@ -188,7 +188,7 @@ def main() -> int:
     # The README claims the pseudo-relevance oracle is "never derived from OLD
     # or NEW." OLD and NEW are built with the default index seed REF_SEED; a
     # genuinely independent oracle must therefore live in a DIFFERENT hash
-    # family. Prior to the fix the oracle used REF_SEED too -> its sim-matrix was
+    # family. Prior to the fix the oracle used REF_SEED too, so its sim-matrix was
     # BYTE-IDENTICAL to OLD's own doc-embedding similarity, and check (1) below
     # would FAIL (catching the overclaim). It passes only because the oracle now
     # uses REF_ORACLE_SEED, a distinct near-orthogonal family.

@@ -1,4 +1,4 @@
-"""RAGForensics eval -- RED/GREEN self-test of the FIRST MILESTONE. Exits 0 on pass.
+"""RAGForensics eval: RED/GREEN self-test of the FIRST MILESTONE. Exits 0 on pass.
 
     python ragforensics/eval.py
 
@@ -7,12 +7,12 @@ with the REAL label-free mechanisms (no gold answers, no hard-coded verdicts):
 
   GREEN  a grounded query is NOT leak-flagged and attributes to "ok".
   RED    a parametrically-known query IS leak-flagged (answer invariant under
-         context removal) -- and disagrees with the docs.
+         context removal), and disagrees with the docs.
   RED    an injected retrieval miss attributes to "retriever".
   RED    an injected unfaithful generation attributes to "generator" (and is NOT
-         mislabelled a leak -- the two axes are separable).
+         mislabelled a leak: the two axes are separable).
   CONTROL  the SAME leak query, with the parametric knowledge removed, drops the
-           flag -> the flag is behavioral, not keyed on the query id (anti-rig).
+           flag; the flag is behavioral, not keyed on the query id (anti-rig).
   CALIB  the auto-calibrated threshold is data-derived: monotonic in the corpus
          baseline and strictly inside (floor, ceil) for a mixed corpus.
   DETERMINISM  two runs are identical.
@@ -61,28 +61,28 @@ def main() -> int:
 
     checks = {}
 
-    # -- GREEN: grounded query is clean --
+    # GREEN: grounded query is clean
     checks["green_grounded_not_leaked"] = (not g.leak_flag)
     checks["green_grounded_attr_ok"] = (g.attribution == "ok")
     checks["green_grounded_answer_from_docs"] = (g.answer == b.grounded_truth)
 
-    # -- RED: parametric leak caught by real invariance mechanism --
+    # RED: parametric leak caught by real invariance mechanism
     checks["red_leak_flagged"] = lk.leak_flag
     checks["red_leak_invariant"] = (lk.invariance >= calib.threshold)
     checks["red_leak_answer_is_parametric"] = (lk.answer == b.leak_parametric)
     checks["red_leak_disagrees_with_docs"] = (lk.answer != b.leak_doc_truth)
 
-    # -- RED: retrieval miss attributed to the retriever --
+    # RED: retrieval miss attributed to the retriever
     checks["red_retriever_attr"] = (rt.attribution == "retriever")
     checks["red_retriever_below_floor"] = (rt.retrieval_quality < retr_floor)
 
-    # -- RED: unfaithful generation attributed to the generator, NOT a leak --
+    # RED: unfaithful generation attributed to the generator, NOT a leak
     checks["red_generator_attr"] = (gn.attribution == "generator")
     checks["red_generator_not_leak"] = (not gn.leak_flag)
     checks["red_generator_unsupported"] = (not gn.supported)
 
-    # -- CONTROL (anti-rig): remove the parametric knowledge -> same query/context,
-    #    flag disappears. Proves the verdict is behavioral, not id-keyed. --
+    # CONTROL (anti-rig): remove the parametric knowledge from the same query and
+    #    context. The flag disappears, proving the verdict is behavioral, not id-keyed.
     rng2 = np.random.default_rng(SEED)
     ctrl = fixtures.build(rng2, leaky_calib=0, inject_leak=False)
     ctrl_calib, ctrl_floor, cv = _run(ctrl)
@@ -91,7 +91,7 @@ def main() -> int:
     checks["control_answer_now_from_docs"] = (cl.answer == fixtures._TOPICS[7][2])
     checks["control_invariance_dropped"] = (cl.invariance < lk.invariance)
 
-    # -- CALIB: auto-calibrated threshold is genuinely data-derived --
+    # CALIB: auto-calibrated threshold is genuinely data-derived
     thr = {}
     for n in (0, 1, 6):
         bb = fixtures.build(np.random.default_rng(SEED), leaky_calib=n)
@@ -100,14 +100,14 @@ def main() -> int:
     checks["calib_mixed_strictly_inside"] = (calib.floor < thr[1] < calib.ceil)
     checks["calib_reacts_to_corpus"] = (thr[0] != thr[6])
 
-    # -- DETERMINISM --
+    # DETERMINISM
     calib_b, floor_b, v_b = _run(fixtures.build(np.random.default_rng(SEED), leaky_calib=0))
     checks["determinism_threshold"] = (calib_b.threshold == calib.threshold)
     checks["determinism_verdicts"] = all(
         v_b[k] == v[k] for k in v
     )
 
-    # -- ABLATION (the headline portfolio proof): the auto-calibrated leak
+    # ABLATION (the headline portfolio proof): the auto-calibrated leak
     #    threshold vs the OBVIOUS naive baseline (a fixed global 0.5 cutoff), scored
     #    on a held-out labelled mix over a legitimately-context-independent corpus.
     #    Both gates read the SAME real invariance signal; only the threshold differs.

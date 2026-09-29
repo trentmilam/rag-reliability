@@ -1,6 +1,6 @@
 # Contributing
 
-This is a portfolio-tier toolkit (see the top-level README's "Status" section) —
+This is a portfolio-tier toolkit (see the top-level README's "Status" section):
 small, offline, deterministic tools, each independently runnable.
 
 ## Running the self-tests
@@ -18,7 +18,7 @@ Both must exit `0`.
 - Keep each tool self-contained (its own directory, its own `eval.py`); avoid
   adding cross-tool dependencies.
 - Every change to a tool's core logic needs its `eval.py` (and `bench.py`,
-  where present) to still exit `0` — extend the red/green fixture if the
+  where present) to still exit `0`. Extend the red/green fixture if the
   change adds a new failure mode worth catching.
 - Keep everything deterministic (fixed seeds, no wall-clock, no network) and
   offline (numpy + stdlib only).

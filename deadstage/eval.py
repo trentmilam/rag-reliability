@@ -76,7 +76,7 @@ def _baseline_symptom_stage(state) -> str | None:
 
     Runs the SAME per-stage invariants as Deadstage (identical detection power,
     NOT a crippled strawman) but reports the DEEPEST stage where a problem is
-    observed -- modelling how real monitoring/alerting fires on the downstream
+    observed, modelling how real monitoring/alerting fires on the downstream
     symptom (empty retrieval, tied scores, a garbage answer) where the failure
     finally becomes visible, rather than the upstream root cause that silently
     produced it. The ONLY difference from Deadstage is attribution DIRECTION

@@ -19,9 +19,9 @@ import numpy as np
 REF_DIM = 256
 REF_SEED = 0xC0FFEE
 
-# Hash family for the reference-relevance ORACLE. It is DELIBERATELY DISTINCT
+# Hash family for the reference-relevance ORACLE. It is a DISTINCT family
 # from REF_SEED (the default index seed used by OLD and NEW), so the pseudo-
-# relevance signal is a genuinely third, near-orthogonal embedding family --
+# relevance signal is a genuinely third, near-orthogonal embedding family,
 # independent of both indexes under test, not byte-identical to OLD. See
 # gate.reference_simmatrix and tests in eval.py (independence check).
 REF_ORACLE_SEED = 0xBADCAFE

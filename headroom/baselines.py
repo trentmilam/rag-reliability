@@ -4,15 +4,15 @@ The novelty claim ("no existing hop-governor gates on measured hardware
 physics") is only credible if it is proved against a REAL incumbent, not
 against "no governor at all." This module ships that incumbent:
 
-    CostGovernor -- a token-cost + answer-sufficiency governor of the
+    CostGovernor: a token-cost + answer-sufficiency governor of the
     Adaptive-RAG / CA-RAG family. It escalates another retrieval/reasoning hop
     while (a) the answer is judged insufficient AND (b) the token budget still
-    covers the next hop -- exactly the software-economics gate those systems use.
+    covers the next hop, exactly the software-economics gate those systems use.
 
-It is DELIBERATELY blind to VRAM / thermal telemetry. That is the incumbent's
-actual design (these methods predate hardware-aware gating), not a handicap we
-imposed -- so the comparison is fair, and the breach it suffers on a
-headroom-constrained card is the genuine wedge Headroom fills.
+It is blind to VRAM / thermal telemetry. That is the incumbent's actual design
+(these methods predate hardware-aware gating), not a handicap imposed here, so
+the comparison is fair, and the breach it suffers on a headroom-constrained
+card is exactly the gap Headroom fills.
 
 Fair-baseline discipline:
   * ONE fixed configuration is used for every scenario in eval.py.
@@ -42,7 +42,7 @@ def _chunk_tokens(text: str) -> int:
 
 TOKENS_PER_HOP = round(sum(_chunk_tokens(c) for c in _CORPUS) / len(_CORPUS)) + _GEN_TOKENS
 # A common context-window budget (e.g. an 8k-context model). Chosen from answer
-# economics, NOT from hardware -- the whole point is that it does not know about
+# economics, NOT from hardware: the whole point is that it does not know about
 # the card.
 TOKEN_BUDGET = 8192
 
@@ -53,7 +53,7 @@ class CostGovernor:
     Interface-compatible with `Headroom` so `loop.run_loop` can drive it: it
     consumes the same `GpuState` telemetry stream via `observe()` and answers
     `gate()` with ALLOW / DENY. It reads ONLY the hop index from the state (to
-    accrue token cost) and its own sufficiency signal -- it never looks at
+    accrue token cost) and its own sufficiency signal; it never looks at
     `vram_used_mb` or `temp_c`, because a cost governor structurally cannot.
     """
 
@@ -85,7 +85,7 @@ class CostGovernor:
         if projected > self.token_budget:
             return self._log(Decision.DENY,
                              f"token budget: {projected:.0f} > {self.token_budget:.0f}")
-        # otherwise the economics say "keep going" -- it has no hardware signal
+        # otherwise the economics say "keep going": it has no hardware signal
         # that would say otherwise.
         return self._log(Decision.ALLOW,
                          f"within budget ({projected:.0f}/{self.token_budget:.0f} tok), "

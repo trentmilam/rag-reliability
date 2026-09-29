@@ -10,15 +10,16 @@ fixture was mutated, not hard-coded into the tool.
 Scenario:
   * A clean source document (source_v1).
   * Citations whose stored text is OCR/whitespace-normalized copies of source
-    spans (simulating an OCR/extraction index) -- clearly synthetic, deterministic.
+    spans (simulating an OCR/extraction index), clearly synthetic and deterministic.
   * GREEN wedge: Plumbline resolves ALL citations against source_v1; the naive
     exact-substring baseline FALSE-FAILS on the normalization (>0 false misses).
   * RED reindex: source_v2 inserts a paragraph up top (shifts every downstream
-    offset -> DRIFT) and deletes one cited region (-> coverage LOST). Plumbline's
-    coverage_diff reports exactly the lost citation + the drifted survivors with
-    their destination spans. If it fails to catch this, eval exits nonzero.
-  * GREEN control: reindex to an IDENTICAL source -> zero LOST, zero DRIFT (no
-    false alarms).
+    offset, causing DRIFT) and deletes one cited region (causing coverage LOST).
+    Plumbline's coverage_diff reports exactly the lost citation plus the drifted
+    survivors with their destination spans. If it fails to catch this, eval exits
+    nonzero.
+  * GREEN control: reindex to an IDENTICAL source yields zero LOST, zero DRIFT
+    (no false alarms).
 
 Deterministic: numpy default_rng(SEED) drives the (bounded) OCR degradation; no
 wall-clock, no uncontrolled randomness.

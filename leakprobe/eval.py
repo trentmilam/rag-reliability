@@ -1,10 +1,10 @@
-"""Leakprobe -- RED/GREEN self-test (first milestone).
+"""Leakprobe: RED/GREEN self-test (first milestone).
 
 Milestone under test:
   Given a corpus seeded with known PII, rank which spans a synthesized,
   PII-eliciting query actually surfaces in a LIVE index top-k, then show that
   the MINIMAL (reachable-only) redaction set (a) closes those leaks and
-  (b) preserves MEASURABLY more retrieval recall than a blanket mask -- while a
+  (b) preserves MEASURABLY more retrieval recall than a blanket mask, while a
   corpus whose PII is not reachable needs no redaction at all.
 
 RED   = the audit CATCHES the injected reachable-PII leak via the real
@@ -15,7 +15,7 @@ GREEN = the clean corpus (PII present but unreachable) yields an empty
 Deterministic by construction: there is NO randomness anywhere in the pipeline
 (the embedder is a fixed-key BLAKE2b feature hash, retrieval is a stable argsort,
 everything else is pure logic). No RNG, no wall-clock, no network. Output is
-therefore byte-identical across runs -- and A6 below PROVES it by re-running the
+therefore byte-identical across runs, and A6 below PROVES it by re-running the
 audit and asserting identical results, rather than merely asserting it. exit 0
 on pass.
 """
@@ -40,7 +40,7 @@ DEBUG = "--debug" in sys.argv
 # --------------------------------------------------------------------------
 # Fixtures
 # --------------------------------------------------------------------------
-# Shared boilerplate footer -- decoys reuse it so a boilerplate-only elicited
+# Shared boilerplate footer: decoys reuse it so a boilerplate-only elicited
 # query is drowned by non-PII chunks (that is what makes tail PII UNREACHABLE).
 _BOILER = "confidential document prepared on behalf of {who} per standard policy footer"
 
@@ -60,14 +60,14 @@ def fault_corpus() -> tuple[list[Chunk], list[tuple[str, int]]]:
         Chunk(200,
               "quarterly revenue finance report summary shows strong margin growth "
               + _BOILER.format(who="jane doe")),
-        # boilerplate decoys (no PII) -- these outrank chunk 200 for the
+        # boilerplate decoys (no PII): these outrank chunk 200 for the
         # boilerplate-heavy name query, making the name unreachable.
         Chunk(300, _BOILER.format(who="the operations group") + " notice alpha"),
         Chunk(301, _BOILER.format(who="the audit group") + " notice bravo"),
         Chunk(302, _BOILER.format(who="the vendor group") + " notice charlie"),
         Chunk(303, _BOILER.format(who="the review group") + " notice delta"),
         # utility competitor for the finance query: shares only 3 utility tokens
-        # and is padded, so at baseline chunk 200 wins -- but once chunk 200 is
+        # and is padded, so at baseline chunk 200 wins. But once chunk 200 is
         # mask-diluted by a blanket redaction, this competitor overtakes it.
         Chunk(400, "quarterly revenue finance overview appendix highlights "
                    "extended annexes tables notes exhibits"),
@@ -133,7 +133,7 @@ def run() -> int:
     if reach_n < 1:
         failures.append(f"A1: expected >=1 reachable PII span, got {reach_n}")
 
-    # A2: mechanism is honest both ways -- reachable spans are email@100 only,
+    # A2: mechanism works both ways: reachable spans are email@100 only,
     #     the boilerplate name@200 is correctly NOT flagged.
     reachable_kinds = sorted((s.kind, s.chunk_id) for s in res.reachable_spans)
     if ("email", 100) not in reachable_kinds:
@@ -155,7 +155,7 @@ def run() -> int:
     if res_after.leak_count != 0:
         failures.append(f"A4: minimal redaction left {res_after.leak_count} reachable leak(s)")
 
-    # A5: recall preserved -- minimal beats blanket, measured.
+    # A5: recall preserved: minimal beats blanket, measured.
     r_base = recall_at_k(chunks, utility, RECALL_K)
     r_min = recall_at_k(redacted_min, utility, RECALL_K)
     redacted_blanket = apply_redaction(chunks, res.blanket_redaction)
@@ -169,7 +169,7 @@ def run() -> int:
     #     runs" claim through the real mechanism). Re-run the SAME audit from
     #     scratch; the full result fingerprint must be identical. This is the
     #     red/green case that guards the fix: before, a dead numpy RNG *labeled*
-    #     output as seeded while nothing verified reproducibility -- a fake seed
+    #     output as seeded while nothing verified reproducibility; a fake seed
     #     would silently "pass". Now, any non-determinism (or reintroduced
     #     randomness) makes this fail as it should.
     fp1 = _fingerprint(audit(fault_corpus()[0], k=RETRIEVAL_K))

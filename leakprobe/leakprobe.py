@@ -1,17 +1,17 @@
-"""Leakprobe -- retrievability-ranked PII audit with minimal redaction.
+"""Leakprobe: retrievability-ranked PII audit with minimal redaction.
 
-The wedge (vs prior art):
+Positioning vs prior art:
 
   * Presidio and friends are EXISTENCE-based: they detect PII and redact every
-    occurrence. That over-redacts -- most PII in a corpus is never actually
+    occurrence. That over-redacts: most PII in a corpus is never actually
     surfaced by retrieval, yet blanket masking degrades every chunk it touches.
   * rag-corpus-profiler and similar are STATIC: they profile the corpus but do
     not model what a retriever can actually reach.
 
 Leakprobe is RETRIEVABILITY-ranked: it scores each detected PII span by whether
 a LIVE vector index actually surfaces the span's chunk in top-k for an
-auto-synthesized, PII-eliciting query, and recommends the MINIMAL redaction set
--- redact only what is reachable. Headline claim: recall preserved vs a blanket
+auto-synthesized, PII-eliciting query, and recommends the MINIMAL redaction set:
+redact only what is reachable. Headline claim: recall preserved vs a blanket
 mask, because unreachable PII (boilerplate, tails) is left intact.
 
 Everything here is deterministic and offline. Retrieval uses the vendored hash
@@ -119,8 +119,8 @@ def _context_tokens(text: str, start: int, end: int, window: int) -> list[str]:
 def synthesize_query(chunk: Chunk, span: Span, window: int = 6) -> str:
     """Build a PII-eliciting query from the span's type keywords + context.
 
-    Deliberately does NOT include the secret value -- retrieval must reach the
-    chunk from context alone, which is what makes reachability meaningful."""
+    Does not include the secret value: retrieval must reach the chunk from
+    context alone, which is what makes reachability meaningful."""
     kw = TYPE_KEYWORDS.get(span.kind, [])
     ctx = _context_tokens(chunk.text, span.start, span.end, window)
     return " ".join(kw + ctx)

@@ -2,12 +2,12 @@
 
 An IndexConfig captures the two reindex knobs ReindexGate is built to police:
 
-  * `embed_dim`  -- embedding dimensionality (fewer buckets = worse index).
-                    Shrinking it is our labelled SIMULATION of a dim-truncation
-                    reindex regression.
-  * `chunker`    -- "sentence" (fine, one chunk per whitespace-delimited span)
-                    or "whole" (coarse, one chunk per document). The coarse
-                    chunker is a labelled SIMULATION of a worse-chunker reindex.
+  * `embed_dim`: embedding dimensionality (fewer buckets = worse index).
+                 Shrinking it is our labelled SIMULATION of a dim-truncation
+                 reindex regression.
+  * `chunker`: "sentence" (fine, one chunk per whitespace-delimited span)
+               or "whole" (coarse, one chunk per document). The coarse
+               chunker is a labelled SIMULATION of a worse-chunker reindex.
 
 Both indexes are searched independently in their own embedding space; scores
 are only ever compared *within* an index, so cross-dim cosine is never mixed.

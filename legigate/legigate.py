@@ -1,4 +1,4 @@
-"""Legigate -- reference-free per-chunk OCR/parse legibility gate.
+"""Legigate: reference-free per-chunk OCR/parse legibility gate.
 
 Scores ALREADY-EXTRACTED text (no images, no ground truth) on two structural
 signals that survive extraction but are corrupted by bad OCR/layout parsing:
@@ -15,14 +15,14 @@ signals that survive extraction but are corrupted by bad OCR/layout parsing:
      numeric density) is re-parsed for cell structure via multi-space / tab /
      pipe delimiters. A well-formed table yields >=2 aligned, consistently-
      counted cells per row; a collapsed table (delimiters flattened to single
-     spaces or rows merged) yields one blob per row -> structure score ~0.
+     spaces or rows merged) yields one blob per row, so the structure score is about 0.
 
 Each signal is scored in [0,1]; higher = more legible. A chunk is QUARANTINED
 if any *applicable* signal falls below its threshold. Signals that do not apply
 to a chunk (table checks on prose, order checks on a table) score 1.0 and are
 reported as not-applicable, so the gate never penalizes the wrong content type.
 
-NOT in scope (delegated to prior art, on purpose): mojibake/encoding repair
+NOT in scope (delegated to prior art): mojibake/encoding repair
 (ftfy) and generic gibberish/language-id filtering (NeMo Curator, datatrove).
 Legigate owns only the underserved *structural* signals.
 """

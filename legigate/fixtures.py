@@ -2,7 +2,7 @@
 
 The corrupted chunks are DERIVED from the clean ones by real, mechanical
 transforms (interleave two columns; flatten table delimiters). Nothing about
-the fault is hand-labeled -- the gate must catch it from the text alone.
+the fault is hand-labeled: the gate must catch it from the text alone.
 """
 
 # Two topically-distinct, locally-cohesive single-column passages.
@@ -58,7 +58,7 @@ def clean_table():
 
 
 def collapsed_table():
-    """FAULT: cell delimiters flattened -- every 2+ space run becomes one space.
+    """FAULT: cell delimiters flattened. Every 2+ space run becomes one space.
 
     Row/column structure is destroyed; each row parses as a single blob.
     """

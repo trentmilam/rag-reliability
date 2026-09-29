@@ -1,4 +1,4 @@
-"""VecStamp -- re-embedding reproduction certificate with failure-typing.
+"""VecStamp: re-embedding reproduction certificate with failure-typing.
 
 Build/load-time identity check for a RAG embedding pipeline.
 
@@ -13,7 +13,7 @@ Build/load-time identity check for a RAG embedding pipeline.
 
 This is strictly a build-vs-load *identity* certificate (did the embedder that
 serves queries reproduce the embedder that built the index?). It is distinct
-from query-time liveness/answer checks -- see README scope note.
+from query-time liveness/answer checks; see README scope note.
 
 Deterministic: probe generation is seeded; no wall-clock, no global random.
 """
@@ -125,7 +125,7 @@ def verify(manifest: Manifest, embed_fn) -> VerifyResult:
     live_rows = [np.asarray(embed_fn(p), dtype=np.float32) for p in manifest.probes]
     live_dim = live_rows[0].shape[0]
 
-    # (1) dim mismatch -- shape changed, cannot even compare element-wise
+    # (1) dim mismatch: shape changed, cannot even compare element-wise
     if live_dim != manifest.dim:
         return VerifyResult(
             ok=False, verdict="dim-mismatch",
@@ -134,7 +134,7 @@ def verify(manifest: Manifest, embed_fn) -> VerifyResult:
 
     live = np.stack(live_rows, axis=0).astype("<f4")
 
-    # (2) bit-exact reproduction -- the certificate holds
+    # (2) bit-exact reproduction: the certificate holds
     live_hash = _canonical_hash(live)
     if live_hash == manifest.float_hash:
         return VerifyResult(
@@ -142,7 +142,7 @@ def verify(manifest: Manifest, embed_fn) -> VerifyResult:
             detail={"float_hash": live_hash},
         )
 
-    # diverged -> measure direction cosine and norm per probe
+    # diverged: measure direction cosine and norm per probe
     ref = manifest.vectors
     cosines = np.array([_row_cosine(live[i], ref[i]) for i in range(len(live))])
     live_norms = np.linalg.norm(live, axis=1)
@@ -157,13 +157,13 @@ def verify(manifest: Manifest, embed_fn) -> VerifyResult:
         "manifest_hash": manifest.float_hash,
     }
 
-    # (3) lost L2 norm -- same direction, wrong magnitude
+    # (3) lost L2 norm: same direction, wrong magnitude
     if mean_cos >= COS_SAME_MODEL and max_norm_err > NORM_TOL:
         return VerifyResult(ok=False, verdict="lost-l2-norm", detail=detail)
 
-    # (4) quant/dtype drift -- same model, tiny numeric perturbation
+    # (4) quant/dtype drift: same model, tiny numeric perturbation
     if mean_cos >= COS_SAME_MODEL:
         return VerifyResult(ok=False, verdict="quant-dtype-drift", detail=detail)
 
-    # (5) wrong weights -- near-orthogonal, a genuinely different model
+    # (5) wrong weights: near-orthogonal, a genuinely different model
     return VerifyResult(ok=False, verdict="wrong-weights", detail=detail)

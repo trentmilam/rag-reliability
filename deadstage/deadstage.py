@@ -1,4 +1,4 @@
-"""Deadstage — a judge-free RAG liveness gate that NAMES the dead stage.
+"""Deadstage: a judge-free RAG liveness gate that NAMES the dead stage.
 
 A read-only probe over a RAG pipeline's *artifacts* (not its code). It asserts
 one structural invariant per stage across
@@ -9,8 +9,8 @@ and, walking the stages in order, reports the SINGLE earliest stage whose
 invariant fails. Upstream death causes downstream symptoms, so naming the
 FIRST dead stage points at the root cause instead of the last thing that threw.
 
-Wedge (positioning, not invention): failover / fallback layers keep a broken
-pipeline *answering* by masking the dead stage; Deadstage does the opposite —
+Positioning, not invention: failover / fallback layers keep a broken
+pipeline *answering* by masking the dead stage; Deadstage does the opposite:
 it asserts and NAMES, and returns non-zero so CI stops. The invariants
 themselves are standard (shape/norm/cardinality/ordering checks and an
 anisotropy floor); we claim novelty only on the assert-and-name posture.
@@ -140,13 +140,13 @@ def from_artifacts(
     This is the counterpart to :func:`build_pipeline`. Where ``build_pipeline``
     manufactures self-consistent artifacts from the vendored embedder,
     ``from_artifacts`` accepts the ``index_ids`` / ``embeddings`` / ``retrieval``
-    a *real* pipeline already emitted — so Deadstage can probe them directly.
+    a *real* pipeline already emitted, so Deadstage can probe them directly.
 
     It performs NO repair and asserts NO invariants (that is :func:`check`'s
     job): it only marshals the inputs into the dataclass. Because the retrieval
     is provided rather than recomputed from the embeddings, the retrieve and
     score invariants become reachable on real, possibly-inconsistent data (e.g.
-    a live retriever that returns out-of-index ids or tied scores) — states that
+    a live retriever that returns out-of-index ids or tied scores), states that
     ``build_pipeline`` can never produce.
 
     ``embeddings`` may be a numpy array or a nested list; it is coerced to

@@ -1,13 +1,13 @@
 """Concordance-with-gold experiment for ReindexGate.
 
 Does the LABEL-FREE gate verdict agree with the REAL nDCG delta computed from
-GOLD relevance labels -- and does it beat the naive incumbent ("just alert on
+GOLD relevance labels, and does it beat the naive incumbent ("just alert on
 RBO churn")? This module supplies the machinery; ``eval.py``'s ``[CONCORDANCE]``
 section runs it and asserts the measured agreement.
 
 GOLD labels are the STRUCTURAL ground truth of the fixture: a probe mined from
 document ``d`` is relevant to ``d`` and to ``d``'s paraphrase partner (the other
-doc with the same ``pair_id``) -- and to nothing else. These labels are
+doc with the same ``pair_id``), and to nothing else. These labels are
 independent of BOTH the indexes under test AND the gate's own pseudo-relevance
 oracle, which must RECOVER them without ever seeing them. Real nDCG on gold is
 exactly what you could only compute WITH qrels; ReindexGate claims to reach the
@@ -34,7 +34,7 @@ GOLD_TAU = 0.01
 # Naive incumbent: flag a regression when rankings churned past this RBO floor.
 # A no-op reindex has RBO == 1.0; a competent engineer picks a floor a little
 # below 1.0 (here 10% churn) so genuinely-identical reindexes are not flagged.
-# This is a REASONABLE RBO threshold, not a strawman -- it is exactly what "just
+# This is a REASONABLE RBO threshold, not a strawman: it is exactly what "just
 # diff the rankings and alarm on a big drop" looks like in practice.
 RBO_TAU = 0.90
 

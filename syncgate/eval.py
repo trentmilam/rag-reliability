@@ -2,15 +2,15 @@
 
 Milestone: prove the incremental-sync diff is exactly right (not "roughly
 fine") and that reference-integrity resolution genuinely distinguishes a
-DANGLING reference from a STALE_CACHED one -- something a naive presence
-check structurally cannot do -- with no rigging: the sync diff is a real hash
+DANGLING reference from a STALE_CACHED one (something a naive presence
+check structurally cannot do), with no rigging: the sync diff is a real hash
 comparison, and the dangling verdict comes from actually looking up the
 target in two real sets (live, cached), not from a hard-coded outcome.
 
 Scenario (obviously-fictional IDs; the "RFCX"/"ERRX" prefixes do not collide
 with any real IETF numbering):
-  * A 6-file corpus snapshot, then one file's content edited -> exactly 1 of 6
-    should be flagged for reprocessing.
+  * A 6-file corpus snapshot, then one file's content edited, so exactly 1 of
+    6 should be flagged for reprocessing.
   * Three reference edges: one resolves cleanly; one points at an entity that
     was renamed/superseded (absent from the live set, but a cached snapshot
     survives); one points at an entity that never existed (absent from both).
@@ -47,7 +47,7 @@ def _fail(msg: str) -> None:
     raise SystemExit(1)
 
 
-# --- fixture: a 6-file corpus snapshot (obviously-fictional RFC-style IDs) --
+# --- fixture: a 6-file corpus snapshot (obviously-fictional RFC-style IDs)
 FILES_V1 = {
     "rfc/rfcx1001.txt": "RFCX1001 defines the Widget Transfer Protocol version 1.",
     "rfc/rfcx1002.txt": "RFCX1002 defines the Gadget Naming Scheme.",
@@ -85,7 +85,7 @@ def main() -> int:
         _fail(f"expected {len(FILES_V1) - 1} unchanged files, got {len(plan.unchanged)}")
     print("  -> RED caught: exactly the edited file is flagged, nothing else")
 
-    # --- HEAD-TO-HEAD: incumbent "reprocess everything" vs SyncGate's diff --
+    # --- HEAD-TO-HEAD: incumbent "reprocess everything" vs SyncGate's diff
     naive_reprocessed = len(v2_hashes)          # the incumbent: N/N, every run
     real_reprocessed = len(plan.changed)        # SyncGate: only what actually changed
     reduction = plan.reduction_factor
@@ -113,7 +113,7 @@ def main() -> int:
     live_entities = {"RFCX1001", "RFCX1002", "RFCX1003", "RFCX1004"}
     cached_entities = {"RFCX2099"}  # last-known-good snapshot of the renamed/superseded doc
 
-    # --- the naive incumbent: a plain presence check (what dict.get gives) --
+    # --- the naive incumbent: a plain presence check (what dict.get gives)
     naive_missing = {e.to_id: (e.to_id not in live_entities) for e in edges}
     closure_violations = {e.to_id for e in reference_closure(edges, live_entities)}
     print(f"\n[naive presence check] missing-from-live: {naive_missing}")

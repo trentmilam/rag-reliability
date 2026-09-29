@@ -3,8 +3,8 @@ by GraphRAG answer-poisoning risk, and emit ranked merge/split proposals.
 
 NONE of the detectors read the ground-truth `real_entity`/`real_community` labels.
 They use only graph structure (degree, connectivity, community membership) and the
-vendored hashing embedder. That is what makes the red/green honest: the mechanism
-genuinely discovers the fault.
+vendored hashing embedder, so the red/green result reflects the mechanism actually
+discovering the fault, not a hard-coded verdict.
 
 Poisoning-risk model (why each defect corrupts a GraphRAG answer):
   * COLLISION      -> conflated evidence: one node holds two entities' facts, so a
@@ -87,7 +87,7 @@ def _community_incoherence(graph, comm_id, members):
 
 def _collision_proposal(graph, node_id, labels):
     """Split a node's facts by cluster; assign each edge to the sub-node whose
-    fact-centroid its neighbour is nearest -- all unsupervised."""
+    fact-centroid its neighbour is nearest, all unsupervised."""
     fids = graph["nodes"][node_id]["facts"]
     from .embed import embed_many
     vecs = embed_many([graph["facts"][f]["text"] for f in fids])

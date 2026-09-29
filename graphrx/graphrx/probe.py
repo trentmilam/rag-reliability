@@ -1,10 +1,10 @@
-"""The retrieval-poisoning delta harness -- the evaluation instrument that
+"""The retrieval-poisoning delta harness: the evaluation instrument that
 VALIDATES a proposal by measuring answer poisoning before vs after applying it.
 
 This is the ONLY place ground-truth labels are read. Poisoning is defined at the
 community (topic) level: for a query about entity E, a retrieved fact is POISON if
 its `real_community` differs from E's real community. Legitimately-related same-
-topic neighbours are NOT poison -- only cross-topic conflation is.
+topic neighbours are NOT poison; only cross-topic conflation is.
 
 Two probes mirror GraphRAG's two retrieval modes:
   * probe_local     -> local search: seed at the entity's node, BFS k hops,

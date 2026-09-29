@@ -1,18 +1,18 @@
-"""Leakprobe -- corpus-scale MEASURED head-to-head vs the Presidio-style
+"""Leakprobe: corpus-scale MEASURED head-to-head vs the Presidio-style
 blanket-redaction baseline.
 
 Why this exists
 ---------------
-The first-milestone `eval.py` proves the wedge on ONE hand-built utility query
+The first-milestone `eval.py` proves the claim on ONE hand-built utility query
 (recall 1.000 -> 0.000, chunk 400 padded to overtake a mask-diluted chunk 200).
 A skeptic rightly discounts a single tuned point. This eval instead builds a
 *distribution* of N topics/queries with a single uniform template (no per-query
 rigging) and MEASURES, over the whole distribution:
 
-  * recall(no-redaction)  -- the unsafe upper bound
-  * recall(minimal)       -- Leakprobe: redact only reachable PII
-  * recall(blanket)       -- the incumbent: Presidio-style, redact ALL detected PII
-  * over-redaction rate   -- (blanket_n - minimal_n)/blanket_n, spans the
+  * recall(no-redaction): the unsafe upper bound
+  * recall(minimal): Leakprobe, redact only reachable PII
+  * recall(blanket): the incumbent, Presidio-style, redact ALL detected PII
+  * over-redaction rate: (blanket_n - minimal_n)/blanket_n, spans the
                              incumbent masks that reachability shows to be needless
 
 ...as a CURVE over k in {1,3,5,10} (k is both the reachability top-k that
@@ -22,7 +22,7 @@ The fair baseline
 -----------------
 "Blanket" == what a competent engineer using Microsoft Presidio actually does:
 detect every PII entity and anonymize each occurrence. It is NOT a crippled
-strawman -- it uses the exact same detectors and mask as Leakprobe; the ONLY
+strawman: it uses the exact same detectors and mask as Leakprobe; the ONLY
 difference is that Leakprobe first asks "can a retriever even reach this span?"
 and spares the unreachable ones.
 
@@ -39,9 +39,9 @@ The corpus
 
 Masking dilutes the gold chunk's vector (the mask token adds mass to the norm),
 so blanket masking of an *unreachable*-PII gold can knock it below its unmasked
-competitor -- recall lost for no safety benefit. Minimal leaves those intact.
+competitor, recall lost for no safety benefit. Minimal leaves those intact.
 The reachable-PII golds are masked by BOTH strategies, so any recall they lose
-is charged to both equally -- the measured gap comes purely from over-redaction.
+is charged to both equally; the measured gap comes purely from over-redaction.
 
 Deterministic: filler is drawn from a fixed vocabulary via a fixed-seed
 `np.random.default_rng`; everything else is pure logic. exit 0 on pass.
@@ -83,11 +83,11 @@ _NAMES = ("jane doe", "john roe", "mary major", "richard miles")
 def baseline_corpus() -> tuple[list[Chunk], list[tuple[str, int]], dict]:
     """Return (chunks, utility_queries, meta).
 
-    One uniform template across all topics -- NOT per-query tuning. The two
+    One uniform template across all topics, NOT per-query tuning. The two
     free parameters (gold "other"-token count, competitor filler length) were
     picked ONCE by measuring margins against the real hash embedder (not
     per-topic hand-tuning) so the unredacted baseline is a genuinely easy
-    retrieval task (gold beats its same-topic competitor almost everywhere) --
+    retrieval task (gold beats its same-topic competitor almost everywhere),
     a prerequisite for a fair redaction-cost comparison. A short, compact gold
     chunk keeps cosine high (fewer non-topic tokens diluting the norm); the
     longer competitor is a genuine same-topic rival that only overtakes gold
@@ -97,7 +97,7 @@ def baseline_corpus() -> tuple[list[Chunk], list[tuple[str, int]], dict]:
     utility: list[tuple[str, int]] = []
     reachable_topics = 0
 
-    # shared boilerplate decoys -- drown the boilerplate-context names so those
+    # shared boilerplate decoys: drown the boilerplate-context names so those
     # name spans are UNREACHABLE (exactly the Presidio over-redaction target).
     decoy_id = 90000
     for grp in ("operations", "audit", "vendor", "review", "finance", "legal"):
@@ -177,13 +177,13 @@ def run() -> int:
     # ---- MEASURED assertions (the portfolio proof) -----------------------
     for k in KS:
         r = table[k]
-        # (1) honest ordering: fewer masks can never help less than more masks.
+        # (1) monotonic ordering: fewer masks can never help less than more masks.
         if not (r["recall_none"] + 1e-9 >= r["recall_minimal"] >= r["recall_blanket"] - 1e-9):
             failures.append(
                 f"C-ord@k={k}: expected none>=minimal>=blanket, got "
                 f"{r['recall_none']:.3f}/{r['recall_minimal']:.3f}/{r['recall_blanket']:.3f}")
 
-    # (2) the wedge, MEASURED: at the strict k=1 the incumbent blanket mask
+    # (2) the gap, MEASURED: at the strict k=1 the incumbent blanket mask
     #     loses recall that Leakprobe's minimal set preserves.
     r1 = table[1]
     if not (r1["recall_minimal"] > r1["recall_blanket"]):
@@ -191,13 +191,13 @@ def run() -> int:
             f"C-gap@k=1: minimal ({r1['recall_minimal']:.3f}) not > blanket "
             f"({r1['recall_blanket']:.3f}) -- no measured recall advantage")
 
-    # (3) HONEST cost claim: minimal is not free -- it still redacts every
+    # (3) cost claim: minimal is not free. It still redacts every
     #     genuinely reachable span, which costs some real recall (those golds
     #     are masked identically under minimal AND blanket). What minimal
     #     avoids is the WASTED cost of masking unreachable PII too. So the
     #     defensible claim is comparative, not absolute: minimal's recall loss
     #     vs the unsafe no-redaction baseline must be strictly SMALLER than
-    #     blanket's loss -- not that minimal has zero cost.
+    #     blanket's loss, not that minimal has zero cost.
     loss_min = r1["recall_none"] - r1["recall_minimal"]
     loss_blank = r1["recall_none"] - r1["recall_blanket"]
     if not (loss_min < loss_blank):

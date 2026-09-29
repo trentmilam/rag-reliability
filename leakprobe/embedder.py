@@ -6,8 +6,8 @@ sentence embedder / retrieval model: it maps text -> a fixed-dim L2-normalized
 vector so cosine similarity (== dot product on unit vectors) drives top-k
 retrieval exactly the way a live vector index would.
 
-Kept deliberately identical in spirit to ../vecstamp/embedder.py (the
-established convention for this portfolio track).
+Kept identical in spirit to ../vecstamp/embedder.py (the established
+convention for this portfolio track).
 """
 
 from __future__ import annotations

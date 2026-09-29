@@ -1,4 +1,4 @@
-"""GraphRx -- a GraphRAG structural linter with retrieval-poisoning scoring.
+"""GraphRx: a GraphRAG structural linter with retrieval-poisoning scoring.
 
 Pure numpy + stdlib. Deterministic. Offline. No Neo4j.
 """

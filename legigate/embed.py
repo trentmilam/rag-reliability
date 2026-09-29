@@ -3,7 +3,7 @@
 BLAKE2b hashing trick -> dim-256 signed bag-of-tokens -> L2-normalized.
 Cosine similarity is just a dot product on the normalized vectors.
 Fully deterministic: same text always yields the same vector (no RNG, no
-learned weights, no network). This is intentionally weak -- it captures
+learned weights, no network). This is intentionally weak: it captures
 lexical overlap, which is all the reading-order signal needs.
 """
 import hashlib

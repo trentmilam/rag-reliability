@@ -1,7 +1,7 @@
 """ChunkLedger FIRST-MILESTONE red/green self-test.
 
 Milestone: prove the conservation law CATCHES a dropped structural element via
-the real anchoring mechanism (RED) and PASSES a lossless chunker (GREEN) -- with
+the real anchoring mechanism (RED) and PASSES a lossless chunker (GREEN), with
 no rigging: no hard-coded verdicts, the drop is detected by shingle-coverage
 falling below tau, and the drift gate trips purely from the per-type ratios.
 
@@ -128,7 +128,7 @@ def naive_aggregate_conservation(src: str, chunks: list[str]) -> float:
     MULTISET, so repeated tokens count) present in the chunk union. One number for
     the whole document.
 
-    It is a FAIR, reasonable metric -- not a strawman: on a lossless chunker it
+    It is a FAIR, reasonable metric, not a strawman: on a lossless chunker it
     returns exactly 1.0 (verified in the head-to-head below). Its blind spot is
     structural, not implementational: a single dropped table / list is a small
     fraction of total tokens, so the aggregate barely moves and the drop hides
@@ -167,7 +167,7 @@ def recursive_char_split(src: str, size: int) -> list[str]:
 
     Recursively split on ["\\n\\n", "\\n", " ", ""] down to <= size, then greedily
     merge adjacent atoms up to `size`. No overlap. LOSSLESS by construction (a pure
-    partition: ``"".join(chunks) == src``) -- a realistic off-the-shelf chunker used
+    partition: ``"".join(chunks) == src``), a realistic off-the-shelf chunker used
     here as the fairness anchor, NOT a contrived dropper.
     """
     atoms = _split_recursive(src, ["\n\n", "\n", " ", ""], size)
@@ -202,7 +202,7 @@ def main() -> int:
     if len(codes) != 2:
         _fail(f"expected 2 code blocks in fixture, parser found {len(codes)}")
 
-    target = tables[1]  # table #2 -- the one we will drop
+    target = tables[1]  # table #2, the one we will drop
     target_span = [target.byte_start, target.byte_end]
     print(f"target = table #2 at byte range {target_span}")
 
@@ -305,13 +305,13 @@ def main() -> int:
     print("\n=== HEAD-TO-HEAD: incumbent aggregate token-ratio vs ChunkLedger ===")
 
     # Fairness anchor #1: on a LOSSLESS chunker the incumbent metric returns 1.0
-    # (it is a real, working metric -- not a rigged strawman).
+    # (it is a real, working metric, not a rigged strawman).
     naive_lossless = naive_aggregate_conservation(FIXTURE, chunks_ok)
     if abs(naive_lossless - 1.0) > 1e-9:
         _fail(f"incumbent metric should read 1.0 on a lossless chunker, got {naive_lossless}")
 
     # Fairness anchor #2: on a REAL off-the-shelf recursive char splitter (a
-    # pure re-partition), BOTH metrics agree the ingest is clean -- so the wedge
+    # pure re-partition), BOTH metrics agree the ingest is clean, so the gap
     # below is a true disagreement on a real dropper, not a broken baseline nor a
     # ChunkLedger false-alarm on benign re-chunking.
     real_chunks = recursive_char_split(FIXTURE, 400)
@@ -336,7 +336,7 @@ def main() -> int:
     rows.append(("drop 1 of 3 tables", "tables", naive_tbl, tbl_ratio,
                  ledger_bad["per_type"]["tables"]["dropped"]))
 
-    # (b) a whole LIST block dropped -- a small element the aggregate barely feels
+    # (b) a whole LIST block dropped: a small element the aggregate barely feels
     li = [e for e in elems if e.type == "list_items"]
     if not li:
         _fail("fixture expected to contain list items")
@@ -357,7 +357,7 @@ def main() -> int:
     for name, typ, nv, pr, spans in rows:
         agg_drop = 1.0 - nv          # how much the incumbent scalar moved
         per_type_drop = 1.0 - pr     # how much the per-type ratio moved
-        # 1. the incumbent scalar stays high -- the loss "looks fine" aggregate-wise
+        # 1. the incumbent scalar stays high: the loss "looks fine" aggregate-wise
         if nv < NAIVE_LOOKS_FINE:
             _fail(f"[{name}] incumbent aggregate {nv:.4f} dipped below {NAIVE_LOOKS_FINE}; "
                   f"weaken the 'aggregate hides it' claim to match reality")

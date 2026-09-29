@@ -1,4 +1,4 @@
-"""GraphRx RED/GREEN self-test -- proves the linter genuinely CATCHES a planted
+"""GraphRx RED/GREEN self-test: proves the linter genuinely CATCHES a planted
 GraphRAG defect via its real mechanism and stays quiet on a clean graph.
 
     python graphrx/eval.py
@@ -12,7 +12,7 @@ RED   : on a graph with a planted ER collision + an over-merged community, the
         (c) its split proposals REDUCE measured retrieval poisoning (delta > 0),
         with the collision split separating facts cleanly by true entity.
 NEGATIVE CONTROL : splitting a clean, coherent node does NOT reduce poisoning
-        (delta <= 0) -- the harness only rewards real repairs, so it isn't rigged.
+        (delta <= 0), so the harness only rewards real repairs and isn't rigged.
 """
 import os
 import sys
@@ -122,8 +122,8 @@ def main() -> int:
     checks["control_clean_split_no_gain"] = d_ctrl["delta"] <= 1e-9
 
     # ---------- MEASURED A/B: poisoning lens vs naive generic graph-health ------
-    # The README's central wedge -- "scored by how much it poisons ANSWERS, not by
-    # generic graph-health metrics" -- is turned from prose into a printed number
+    # The README's central claim, "scored by how much it poisons ANSWERS, not by
+    # generic graph-health metrics," is turned from prose into a printed number
     # here. We run three fair, standard graph-health baselines (no poisoning lens,
     # no embeddings) on the SAME flawed graph and score each by how many of the two
     # PLANTED poisoners it recovers in its top-2, and how many top-2 slots are false
