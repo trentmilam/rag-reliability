@@ -1,9 +1,8 @@
 # Contributing
 
-This is a portfolio-tier toolkit (see the top-level README's "Status" section):
-small, offline, deterministic tools, each independently runnable.
+Portfolio-tier toolkit: small, offline, deterministic tools, each independently runnable.
 
-## Running the self-tests
+## Self-tests
 
 ```
 pip install -r requirements.txt
@@ -13,14 +12,9 @@ python <tool>/eval.py          # run one tool in isolation
 
 Both must exit `0`.
 
-## Making a change
+## Changes
 
-- Keep each tool self-contained (its own directory, its own `eval.py`); avoid
-  adding cross-tool dependencies.
-- Every change to a tool's core logic needs its `eval.py` (and `bench.py`,
-  where present) to still exit `0`. Extend the red/green fixture if the
-  change adds a new failure mode worth catching.
-- Keep everything deterministic (fixed seeds, no wall-clock, no network) and
-  offline (numpy + stdlib only).
-- Open a PR against `main`; CI (`.github/workflows/test.yml`) runs
-  `run_all_evals.py` across Python 3.10/3.11/3.12.
+- Each tool stays self-contained: own directory, own `eval.py`, no cross-tool dependencies.
+- `eval.py` (and `bench.py`, where present) must still exit `0`. Extend the red/green fixture for a new failure mode.
+- Deterministic (fixed seeds, no wall-clock, no network) and offline (numpy + stdlib only).
+- Open a PR against `main`. CI (`.github/workflows/test.yml`) runs `run_all_evals.py` on Python 3.10/3.11/3.12.

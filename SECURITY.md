@@ -1,5 +1,3 @@
 # Security
 
-To report a vulnerability, please use GitHub's private security advisory
-feature for this repository (the Security tab's "Report a vulnerability"
-action) rather than opening a public issue.
+Report vulnerabilities through GitHub's private security advisory (Security tab, "Report a vulnerability"). No public issues.

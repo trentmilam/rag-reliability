@@ -1,97 +1,39 @@
 # SyncGate
 
-When a corpus updates incrementally, only the changed documents should get reprocessed, and any
-document that points at another one by ID should still resolve to something real. SyncGate checks
-both: it flags exactly what changed since the last sync, and it tells apart a reference that's
-gone stale (the target moved but an older cached copy still exists) from one that's genuinely
-broken (the target never existed at all).
+Label-free incremental-sync and cross-document reference-integrity gate for RAG pipelines.
 
-More precisely, it is a label-free incremental-sync and cross-document reference-integrity gate
-for RAG pipelines. It answers two questions most ingestion pipelines leave to silence or a shrug:
-whether an incremental sync reprocessed exactly what changed, no more and no less, and whether a
-pointer from one document to another by ID still resolves, and if not, whether it is recoverably
-stale or genuinely broken.
+- Which files changed since the last sync.
+- Whether each cross-document reference still resolves: `LIVE` / `STALE_CACHED` / `DANGLING`.
 
-SyncGate operates on the same `{relative_file_path: content_sha256}` watermark
-shape a real ingest pipeline already maintains (see the sibling `agentic-rag`
-project's `ingest/state.py`), plus a small set of typed reference edges
-(`{"from": ..., "to": ..., "reason": ...}`, e.g. an RFC's `Obsoletes` pointer
-or an erratum's "corrects" pointer). It reports exactly which files need
-reprocessing and a three-way verdict (`LIVE` / `STALE_CACHED` / `DANGLING`)
-for every reference.
+Input: the `{relative_file_path: content_sha256}` watermark shape of the sibling `agentic-rag`
+project's `ingest/state.py`, plus typed reference edges
+(`{"from": ..., "to": ..., "reason": ...}`, e.g. `Obsoletes`, "corrects").
 
-## What's actually new
+## Mechanisms
 
-Nothing here is a new hashing or graph algorithm. The wedge is in what gets
-reported and how the failure modes are separated:
+1. Three reference states.
+   - `LIVE`: target present.
+   - `STALE_CACHED`: target renamed or superseded, cached snapshot served.
+   - `DANGLING`: target never existed. Names the broken edge (`from`/`to`/`reason`).
+   - A naive presence check flags a renamed and a never-existed entity identically.
+2. Incremental diff. Hash comparison against the prior watermark.
+   Editing 1 of 6 files reprocesses 1/6, a **6.0× reduction**.
+3. `reference_closure`: the strict, cache-blind closure, equivalent to the naive check.
 
-1. Three named sync/reference states, not one boolean. Most "does this
-   reference still work" checks collapse to `dict.get(ref) is None`: a single
-   True/False. That conflates two structurally different situations: a
-   target that was renamed or superseded (recoverable: serve a
-   last-known-good cached snapshot, flagged stale) and a target that never
-   existed at all (a hard failure; never fabricate a target). SyncGate's
-   `resolve_reference` keeps these distinct: `LIVE` / `STALE_CACHED` /
-   `DANGLING`. This is measured, not asserted: see the head-to-head in
-   `eval.py`. On the exact same fixture the naive presence check flags a
-   renamed entity and a never-existed entity identically (`True`/`True`,
-   "missing"), while SyncGate reports `STALE_CACHED` for one and `DANGLING`
-   for the other, naming the exact broken edge (`from`/`to`/`reason`).
-2. Self-referential incremental diff. `changed_files` needs no external
-   "what should have changed" oracle: the hash comparison against the prior
-   watermark IS the ground truth. `eval.py` measures the reduction directly
-   against the naive incumbent ("reprocess everything every run"): editing 1
-   of 6 files reprocesses 1/6, a **6.0× reduction**, not an assumed one.
-3. `reference_closure` as the explicit naive-equivalent primitive. Rather
-   than hiding the naive check inside a strawman, SyncGate's own strict
-   (cache-blind) closure function computes the same thing a `dict.get`
-   check would, so the three-way fallback's improvement over it is visible
-   in the API surface, not just in the demo.
+Standard sha256 hashing and dict/set lookups.
 
-Everything else here (sha256 content hashing, dict/set lookups) is standard
-and **not** claimed as novel.
+## Related
 
-## How this compares to existing tools
-
-- Content-addressed incremental build systems (Make-style mtime/hash
-  watermarks, `dvc`, LangChain's `Indexing API` dedup) already do
-  hash-based incremental sync. SyncGate does not reinvent that; it packages
-  the SAME watermark shape with an explicit, measured naive-vs-real
-  comparison and adds the reference-integrity half, which those tools don't
-  cover.
-- Link-checkers (`linkchecker`, broken-link CI actions) already flag `404`s.
-  They are binary (works / doesn't) and web-URL-shaped. SyncGate's targets
-  are corpus-internal entity IDs, and the three-way fallback (with an
-  explicit cached-snapshot state) is the part a generic link-checker doesn't
-  model.
-- Sibling tools in this repo: **ChunkLedger** (`chunkledger/`) is
-  self-referential *within one document's own chunking*: it proves nothing
-  was dropped between a source and its chunks. SyncGate is a different axis
-  entirely: corpus-wide, cross-run (sync) and cross-document (reference
-  integrity) bookkeeping, not per-document conservation.
-
-No existing tool found under a name close to this one covers the same
-ground; the closest prior art is the incremental-build and link-checker
-tooling cited above, and it differs on the axes described there.
+- Hash-based incremental build tools (Make, `dvc`, LangChain Indexing API dedup): same watermark shape, no reference-integrity half.
+- Link-checkers (`linkchecker`, broken-link CI actions): binary, web-URL-shaped.
+- ChunkLedger (`chunkledger/`): conservation within one document's chunking. SyncGate: corpus-wide, cross-run and cross-document.
 
 ## Scope
 
-What this MVP is, and is not:
-
-- Is: a deterministic, offline, stdlib-only proof-of-concept of the two
-  mechanisms, with a real red/green self-test and a working CLI.
-- No numpy needed: unlike several sibling tools, SyncGate's core is
-  dict/set bookkeeping, not numeric scoring; pure standard library.
-- Incremental sync operates on hashes you supply; it does not compute
-  file hashes itself (that's the ingest pipeline's job; see
-  `agentic-rag/ingest/state.py`) and does not touch the filesystem.
-- Reference fallback is a fixed two-tier lookup (live set, then cached
-  set). It does not model *how* a cached snapshot was produced, how stale is
-  "too stale" to serve, or automatic cache eviction; those are pipeline
-  policy, not this gate's job.
-- The demo's corpus (6 files, 3 reference edges) and its `RFCX`/`ERRX`-prefixed
-  IDs are **synthetic and obviously fictional**, chosen so nothing here
-  reads as a claim about any real IETF document.
+- Deterministic, offline, stdlib-only. No numpy.
+- Uses hashes you supply. Computes none, touches no filesystem.
+- Fixed two-tier lookup (live set, then cached set). No cache production, staleness limit or eviction.
+- Demo corpus: 6 files, 3 reference edges, synthetic `RFCX`/`ERRX` IDs.
 
 ## Files
 
@@ -106,20 +48,15 @@ What this MVP is, and is not:
 python syncgate/eval.py
 ```
 
-It builds a 6-file corpus snapshot and edits one file, then:
+6-file snapshot, one file edited.
 
-- `RED`/measured: `plan_sync` flags exactly the edited file; the
-  head-to-head against "reprocess everything" measures a **6.0× reduction**.
-- `RED`: three reference edges are resolved. One renamed target (cached
-  snapshot exists) and one never-existed target are flagged **identically**
-  by a naive presence check, but SyncGate's fallback correctly reports
-  `STALE_CACHED` vs `DANGLING`, naming the exact broken edge.
-- `GREEN`: fixing the dangling target (making it live) clears the gate.
+- `RED`/measured: `plan_sync` flags exactly the edited file. **6.0× reduction** vs reprocess-everything.
+- `RED`: three reference edges. Naive check flags the renamed and the never-existed target identically. SyncGate reports `STALE_CACHED` vs `DANGLING`.
+- `GREEN`: making the dangling target live clears the gate.
 
-No hard-coded verdicts: the diff comes from a real hash comparison, and the
-three-way status comes from real set-membership lookups.
+Diff from a real hash comparison, status from set membership. No hard-coded verdicts.
 
-### Measured self-test output (real run)
+### Measured output
 
 ```
 [one file edited] changed=['rfc/rfcx1002.txt']
@@ -146,16 +83,13 @@ python syncgate/syncgate.py --current syncgate/examples/current_hashes.json --pr
     --edges syncgate/examples/edges.json --live syncgate/examples/live.json --cached syncgate/examples/cached.json
 ```
 
-`examples/` is a tiny runnable fixture: one file changed since `state.json`,
-and one reference edge whose target isn't live but has a cached snapshot
-(`STALE_CACHED`, not `DANGLING`, so the gate passes).
+`examples/`: one file changed since `state.json`, one edge with a non-live target and a cached snapshot (`STALE_CACHED`, gate passes).
 
-`--current`/`--prior` are JSON `{path: sha256}` maps; `--edges` is a JSON list
-of `{from, to, reason}`; `--live`/`--cached` are JSON lists of entity IDs.
-Exits **2** when a `DANGLING` reference is found: drop it straight into CI.
+- `--current`/`--prior`: JSON `{path: sha256}` maps.
+- `--edges`: JSON list of `{from, to, reason}`.
+- `--live`/`--cached`: JSON lists of entity IDs.
+- Exits **2** on a `DANGLING` reference.
 
 ## Determinism
 
-No RNG, no wall-clock, no network. Hashing is `hashlib.sha256` over supplied
-content; resolution is plain set membership. Identical inputs produce identical
-results (asserted in the self-test).
+No RNG, no wall-clock, no network. `hashlib.sha256` over supplied content, plain set membership. Identical inputs, identical results (asserted in the self-test).

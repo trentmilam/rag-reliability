@@ -1,109 +1,56 @@
 # ChunkLedger
 
-ChunkLedger watches the ingestion stage of a RAG pipeline, where a document gets split into
-chunks (the small pieces a RAG system actually stores and retrieves). It catches chunkers that
-silently drop or duplicate part of a document, like an entire table disappearing, with nothing
-raising an error to say so.
+Label-free ingestion conservation law for RAG pipelines. Catches chunkers that drop or duplicate
+document content, such as a whole table disappearing.
 
-More precisely, it is a label-free ingestion conservation law for RAG pipelines. Most ingestion
-stacks stay silent on whether a chunker's output silently dropped or duplicated structural
-content, and on which bytes, when it did. ChunkLedger answers that directly.
+- Parses a source document into typed elements (tables, code blocks, headings, list items, links, numeric spans), each with a byte range
+- Checks element by element that content survived into the union of the emitted chunks
+- Reports per-type conservation ("tables: 2/3 conserved") and a byte-level manifest of dropped/duplicated spans
+- Run-over-run drift gate for CI, tripping on per-type regression
 
-ChunkLedger parses a source document into typed structural elements (tables,
-code blocks, headings, list items, links, numeric spans), each with a byte
-range, then verifies element-by-element that the content survived into the union
-of the emitted chunks. It reports a per-type conservation ratio ("tables:
-2/3 conserved"), a byte-level manifest of every dropped/duplicated span, and
-a run-over-run drift gate for CI that trips on per-type regression.
+## Differences from existing checks
 
-## Where it differs from existing ingestion checks
+1. Per-element-type conservation, not one document-wide number. On the same dropping-chunker output the aggregate token ratio reads **0.898**; ChunkLedger reports `tables 2/3` (0.667) and the dropped range `[298, 396]`. Dropping a list block: aggregate **0.889**, `list_items` **0/3**.
+2. Label-free. The parsed source is its own reference: no gold chunks, no expected counts.
+3. Drift gate keyed per type.
 
-Existing ingestion-quality checks compare against an external gold reference or
-score an aggregate token ratio across the whole document. ChunkLedger takes a
-different approach on three specific axes:
-
-1. Per structural-element-type conservation, not one document-wide number.
-   "≈90% of tokens survived" hides "a whole table vanished"; `tables: 2/3` does not.
-   The head-to-head below backs that with real numbers: on the exact
-   same dropping-chunker output the incumbent aggregate token-ratio reads **0.898**
-   (looks fine) while ChunkLedger reports `tables 2/3` (0.667) + the dropped byte
-   range `[298, 396]`; drop a whole list block and the aggregate reads **0.889**
-   while `list_items` goes to **0/3**.
-2. Self-referential and label-free. The parsed source is its own reference:
-   no gold chunk set, no human labels, no "expected table count" to maintain.
-   You can run it on any document you already have.
-3. Run-over-run drift as a CI gate, keyed per type, so a chunker/config change
-   that starts dropping list items trips the build even if the aggregate ratio
-   barely moves.
-
-Everything else here (character-shingle anchoring, LCS-style overlap, markdown
-parsing) is standard and not claimed as novel.
+Character-shingle anchoring, LCS-style overlap and markdown parsing are standard.
 
 ## Related work
 
-- Unstructured `SCORE-Bench`: reference-based document-parsing evaluation
-  using an aggregate token-ratio style metric against gold references. ChunkLedger
-  is *reference-free* (self-anchoring) and reports *per-element-type* conservation
-  plus a *drift gate*, rather than a single aggregate ratio against a gold set.
-- Standard **shingling / MinHash / LCS** text-overlap techniques, used here as
-  the anchoring primitive and not invented here.
-
-No existing tool found under a name close to this one covers the same ground.
-The closest prior art is SCORE-Bench, and it differs on the three axes above.
+- Unstructured `SCORE-Bench`: reference-based parsing evaluation with an aggregate token-ratio metric. ChunkLedger is reference-free, per-type, with a drift gate.
+- Shingling / MinHash / LCS text-overlap techniques: used as the anchoring primitive.
 
 ## Scope and limits
 
-ChunkLedger itself is a deterministic, offline `numpy`+stdlib proof-of-concept
-of the conservation law, with a real red/green self-test and a working CLI.
+Deterministic, offline `numpy`+stdlib proof of concept with a red/green self-test and a CLI.
 
-- Input format: markdown. The structural parser is a pragmatic markdown
-  parser (fenced code, pipe tables, ATX headings, list items, inline links,
-  numeric spans), **not** a full CommonMark/GFM implementation. HTML, PDF, and
-  nested/edge-case markdown are out of scope for this milestone.
-- Anchoring is literal character-shingle coverage: full-length k-gram
-  shingles are matched as substrings; a **short** element (a bare numeric span, a
-  short heading) is grown to its enclosing alphanumeric token and matched on
-  **token boundaries**, so a genuinely dropped short span is not falsely
-  "conserved" by its characters occurring inside an unrelated larger token (e.g.
-  a dropped `12` is not excused by a surviving `512`). It detects content that
-  *survived vs. vanished*; it is intentionally **contiguity-blind**. An element
-  split across two chunks is still "conserved", and that is correct: it wasn't
-  lost, just partitioned.
-- Duplication detection flags an element present at conservation strength in
-  ≥2 chunks (e.g. from overlapping-window chunkers).
-- The demo's two chunkers (lossless, dropping) and the GPU/LLM-free fixture are
-  **synthetic and clearly labelled**: deterministic synthetic fixtures with a
-  held-out labeled answer key, the same discipline used across every tool in
-  this repo.
-- Not tuned for adversarial near-duplicate content or very short documents; the
-  shingle length (`k=12`) and thresholds (`tau=0.85`) are documented knobs.
+- Input: markdown. Pragmatic parser (fenced code, pipe tables, ATX headings, list items, inline links, numeric spans), not full CommonMark/GFM. HTML, PDF and nested/edge-case markdown out of scope.
+- Anchoring: literal character-shingle coverage. Full-length k-gram shingles match as substrings. Short elements grow to their enclosing alphanumeric token and match on token boundaries (a dropped `12` is not excused by a surviving `512`).
+- Contiguity-blind: an element split across two chunks counts as conserved.
+- Duplication: flagged when an element is present at conservation strength in ≥2 chunks.
+- Demo chunkers (lossless, dropping) and the fixture are synthetic, with a held-out labeled answer key.
+- Not tuned for adversarial near-duplicate content or very short documents. Knobs: shingle length `k=12`, threshold `tau=0.85`.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `chunkledger.py` | core: `parse_elements`, `build_ledger`, `drift_gate`, + CLI |
-| `eval.py` | first-milestone **red/green self-test** (exit 0 on pass) |
+| `eval.py` | red/green self-test (exit 0 on pass) |
 
-## Run the self-test
+## Self-test
 
 ```
 python chunkledger/eval.py
 ```
 
-It builds a markdown doc with 3 tables + 2 code blocks, then:
-- **GREEN:** a lossless (block-split) chunker conserves every type (all ratios 1.0);
-- **RED:** a dropping chunker that omits the block holding table #2 is caught by
-  the *mechanism* (that table's element coverage falls to ~0.12, well below `tau`),
-  reported as `tables: 2/3` with the missing byte range, and the **drift gate
-  trips** vs. the baseline;
-- **GREEN again:** re-running the lossless chunker vs. the baseline leaves the
-  drift gate clean.
+Builds a markdown doc with 3 tables + 2 code blocks, then:
+- **GREEN:** lossless (block-split) chunker conserves every type (all ratios 1.0)
+- **RED:** dropping chunker omits the block holding table #2; its element coverage falls to ~0.12 (below `tau`), reported as `tables: 2/3` with the missing byte range; drift gate trips vs. baseline
+- **GREEN:** lossless re-run vs. baseline leaves the drift gate clean
 
-No hard-coded verdicts: the drop is detected purely by shingle coverage dropping
-below threshold, and the gate fires purely from the per-type ratio comparison.
-
-### Measured self-test output (real run, 2026-07-04)
+### Self-test output (real run, 2026-07-04)
 
 ```
 parsed: 3 tables, 2 code blocks
@@ -116,16 +63,9 @@ parsed: 3 tables, 2 code blocks
 PASS  (exit 0)
 ```
 
-### Measured head-to-head vs the incumbent aggregate metric (real run, 2026-07-04)
+### Head-to-head vs aggregate token-recall (real run, 2026-07-04)
 
-The self-test now implements the **incumbent baseline**: a single document-wide
-**aggregate token-recall ratio** (the aggregate token-ratio style that
-reference-based document-parse evals such as Unstructured's SCORE-Bench report:
-fraction of source tokens, as a multiset, present in the union of the emitted
-chunks). It is a *fair, working* metric, **not** a strawman: on a lossless
-chunker it reads exactly `1.0`, and on a real off-the-shelf LangChain-style
-`RecursiveCharacterTextSplitter` (a pure re-partition) **both** metrics agree the
-ingest is clean. The gap between them shows up only on a real drop:
+Baseline: document-wide aggregate token-recall ratio (the SCORE-Bench style metric). Reads exactly `1.0` on a lossless chunker. On an off-the-shelf LangChain-style `RecursiveCharacterTextSplitter` (pure re-partition), both metrics read clean.
 
 ```
 real off-the-shelf recursive splitter (lossless): incumbent 1.0  |  ChunkLedger min per-type 1.0   (both CLEAN)
@@ -139,17 +79,11 @@ table drop: incumbent 1.0->0.8981 (-10.2pt)  vs  ChunkLedger tables 1.0->0.667 (
 list  drop: incumbent 1.0->0.8889 (-11.1pt)  vs  ChunkLedger list_items 1.0->0.000 (-100pt) = 9.0x more sensitive, entire type wiped
 ```
 
-The incumbent scalar is not *useless*; it does
-dip ~10 points. But (a) that dip is the same order as benign run-over-run token
-churn (re-wrapping, boilerplate), so a tolerance tight enough to catch it invites
-false positives; (b) the scalar can name **neither the type nor the bytes** that
-went missing; and (c) an *entire structural type* can be wiped out (`list_items
-0/3`) while the aggregate still reads a comfortable **0.889**. ChunkLedger's
-per-type ratio is measured here at **3.3×–9.0× more sensitive** to the structural
-loss and hands you the type + exact byte spans, with a drift gate that trips at
-zero tolerance. This is the head-to-head asserted in `eval.py` (it fails the
-build if the incumbent ever *dips below 0.85* or ChunkLedger is *not* at least 2×
-more sensitive), so the claim stays accurate if the fixture changes.
+- Aggregate names neither the type nor the bytes
+- A whole type can vanish (`list_items 0/3`) while the aggregate reads **0.889**
+- ChunkLedger: **3.3×–9.0×** more sensitive, with type and byte spans, drift gate at zero tolerance
+
+`eval.py` asserts this: it fails if the incumbent dips below 0.85 or ChunkLedger is under 2x more sensitive.
 
 ## CLI
 
@@ -159,17 +93,12 @@ python chunkledger/chunkledger.py --source chunkledger/examples/doc.md --chunks 
 python chunkledger/chunkledger.py --source chunkledger/examples/doc.md --chunks chunkledger/examples/chunks_new.json --prior chunkledger/prior.json
 ```
 
-`examples/doc.md` + `examples/chunks_ok.json` / `chunks_new.json` are tiny
-runnable fixtures: the first command's lossless split conserves everything and
-writes `chunkledger/prior.json` (gitignored; see `.gitignore`); the second
-re-chunks with the table dropped, which the drift gate against `prior.json`
-catches (exit 2).
-
-`--chunks` is a JSON list of strings (your chunker's output). With `--prior`, the
-process **exits non-zero (2) when the drift gate trips**, so it drops straight into CI.
+- `examples/doc.md`, `chunks_ok.json`, `chunks_new.json`: runnable fixtures
+- First command: lossless split, writes `chunkledger/prior.json` (gitignored)
+- Second command: re-chunks with the table dropped; drift gate against `prior.json` catches it (exit 2)
+- `--chunks`: JSON list of strings (chunker output)
+- With `--prior`, exits non-zero (2) when the drift gate trips
 
 ## Determinism
 
-Fixed seed via `numpy.random.default_rng(SEED)` for the fixture; no wall-clock,
-no `random`, no network, no pip install. Identical inputs produce an identical
-ledger (asserted in the self-test).
+Fixed seed via `numpy.random.default_rng(SEED)`. No wall-clock, `random`, network or pip install. Identical inputs give an identical ledger (asserted in the self-test).
