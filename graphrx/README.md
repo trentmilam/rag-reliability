@@ -93,7 +93,8 @@ i.e. the full repo-root-relative path is `graphrx/graphrx/embed.py`.
 
 ## Prior art & how this differs
 
-- Yu et al., "Knowledge Graph Health Assessment" (the Neo4j-only article/tooling) assesses
+- Fanghua (Joshua) Yu, "Knowledge Graph Health Assessment" (a Neo4j-focused article series,
+  not a peer-reviewed paper) assesses
   KG health with graph-native metrics, **inside Neo4j**. What GraphRx adds is threefold and
   nothing is claimed beyond that: (1) it is **not Neo4j-bound**; it operates on a plain
   adjacency dict, so it fits any GraphRAG store; (2) defects are scored through a **retrieval-

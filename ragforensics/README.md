@@ -122,11 +122,12 @@ fixed seed, no wall-clock/`random`).
 - ContextCite (Cohen-Wang et al., 2024): context-attribution of a generation to
   its sources. We reuse the *concept* of answer-vs-context support; we do not lift its
   code or its ablation/gradient attribution method.
-- ReDeEP / parametric-leak analysis: arXiv **2510.12668**; work on detecting when a
-  RAG model answers from parametric knowledge rather than the retrieved context. Our
-  context-removal-invariance signal is a black-box behavioral proxy for this.
-- RAGChecker / RAG-E and similar evaluators: thorough, but **require labels**
-  (gold answers / relevance). RAGForensics' wedge is being **label-free**.
+- ReDeEP (Sun et al., ICLR 2025): arXiv **2410.11414**; detects hallucination by
+  decoupling a model's use of retrieved context from its parametric knowledge. Our
+  context-removal-invariance signal is a black-box behavioral proxy for the same question,
+  without ReDeEP's mechanistic-interpretability access to internals.
+- RAGChecker (arXiv **2408.08067**) and similar evaluators: thorough, but **require
+  labels** (gold answers / relevance). RAGForensics' wedge is being **label-free**.
 
 ## Limitations
 

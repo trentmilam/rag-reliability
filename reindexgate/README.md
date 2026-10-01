@@ -15,7 +15,7 @@ new index regresses, and passes a no-op reindex.
 
 Every existing offline IR-eval path needs something ReindexGate does without:
 
-- `ranx` / `pytrec_eval` compute nDCG/MAP/RBO beautifully, but require
+- `ranx` / `pytrec_eval` compute nDCG/MAP beautifully, but require
   qrels (human relevance judgments) you usually do not have in a product repo.
 - LLM-as-judge reindex checks need a model, are non-deterministic, cost
   money, and cannot run air-gapped in CI.
@@ -165,7 +165,8 @@ python reindexgate/gate.py --old-dim 256 --new-dim 16   # -> FAIL
 
 ## Related tools
 
-- `ranx`: fast Python IR-eval (nDCG/MAP/RBO/fusion). Requires qrels;
+- `ranx`: fast Python IR-eval (nDCG/MAP/RBP/fusion; note RBP, rank-biased
+  *precision*, is a different measure from the RBO used here). Requires qrels;
   ReindexGate targets the no-qrels case. <https://github.com/AmenRa/ranx>
 - Drift-Adapter: embedding/index drift across reindexing, arXiv **2509.23471**.
 - Büttcher, Clarke, Yeung, Soboroff (SIGIR 2007): *Reliable Information

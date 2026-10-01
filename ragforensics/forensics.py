@@ -3,7 +3,7 @@
 Scope: the individual mechanisms here are COMMODITY. Answer
 invariance under context removal, self-consistency resampling, and answer-in-context
 support checks all appear in the literature (see README: ContextCite, ReDeEP /
-arXiv 2510.12668, RAGChecker/RAG-E). RAGForensics does NOT reimplement any of them.
+arXiv 2410.11414, RAGChecker). RAGForensics does NOT reimplement any of them.
 What it packages is a narrow wedge:
 
   * LABEL-FREE end to end: no gold answers, no relevance judgments. Every signal
